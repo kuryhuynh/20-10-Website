@@ -1,16 +1,18 @@
 /**
  * 20/10 VIETNAMESE WOMEN'S DAY - MAIN JAVASCRIPT LOGIC
  * Features:
- * - Dynamic SVG Jigsaw Heart with interlocking tabs and scatter/assemble animations
- * - Background ambient glowing particles & falling rose petals
- * - Audio player with acoustic music & Web Audio API chime synthesis
- * - Native <dialog> modals for Wishes, Photo Selection, and Name Customization
- * - LocalStorage persistence and URL query parameter sharing
+ * - Scene 1: Blooming rose flower & rose wall unfolding
+ * - Scene 2: 3D rotating memory sphere with polaroid photos & floating quotes
+ * - Scene 3: Cute handwritten love card with corner doodles & moodboard backdrop
+ * - Scene 4: Iconic golden frame card with heart jigsaw puzzle & October 2026 calendar
+ * - Synchronized lyrics subtitle bar matched to TikTok acoustic track
+ * - Web Audio API chime sound synthesizer & canvas particle effects
+ * - Native <dialog> modals for Wishes, Photo Customization, and Name Personalization
  */
 
 document.addEventListener('DOMContentLoaded', () => {
   // ============================================================
-  // 1. STATE & LOCAL STORAGE INITIALIZATION
+  // 1. STATE & PERSISTENCE
   // ============================================================
   const state = {
     sender: localStorage.getItem('womenDay_sender') || 'Anh',
@@ -18,18 +20,20 @@ document.addEventListener('DOMContentLoaded', () => {
     photoSrc: localStorage.getItem('womenDay_photo') || 'assets/photo-couple.jpg',
     category: localStorage.getItem('womenDay_category') || 'lover',
     customWishes: localStorage.getItem('womenDay_customWishes') || '',
+    activeScene: 'bloom',
+    userManualSceneOverride: false,
     isScattered: false,
     isPlayingMusic: false,
     audioUnlocked: false
   };
 
-  // URL Query Parameters Override (for shared links)
+  // URL Query Parameters Override
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('from')) state.sender = decodeURIComponent(urlParams.get('from'));
   if (urlParams.get('to')) state.recipient = decodeURIComponent(urlParams.get('to'));
   if (urlParams.get('cat')) state.category = decodeURIComponent(urlParams.get('cat'));
 
-  // Predefined Heartfelt Wishes by Category
+  // Predefined Wishes by Category
   const wishesData = {
     lover: {
       tag: 'Dành tặng: Người Yêu / Vợ ❤️',
@@ -90,44 +94,68 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================
   // 2. DOM ELEMENTS CACHE
   // ============================================================
+  // Navigation & Scene Panes
+  const navTabs = document.querySelectorAll('.nav-tab');
+  const scenePanes = document.querySelectorAll('.scene-pane');
+  const btnReplayStory = document.getElementById('btn-replay-story');
+  const btnCustomNames = document.getElementById('btn-custom-names');
+  const btnShareLink = document.getElementById('btn-share-link');
+
+  // Scene 1: Bloom
+  const bloomWrapper = document.querySelector('.bloom-wrapper');
+  const bloomingFlower = document.getElementById('blooming-flower');
+  const roseWall = document.getElementById('rose-wall');
+
+  // Scene 2: 3D Sphere
+  const sphereViewport = document.getElementById('sphere-viewport');
+  const world3d = document.getElementById('world-3d');
+  const orbitContainer = document.getElementById('orbit-container');
+
+  // Scene 3: Cute Card
+  const backdropPhotosGrid = document.getElementById('backdrop-photos-grid');
+  const cuteCardTitle = document.getElementById('cute-card-title');
+  const cuteCardBodyText = document.getElementById('cute-card-body-text');
+  const cuteCardSignature = document.getElementById('cute-card-signature');
+
+  // Scene 4: Frame & Heart Puzzle
   const displaySender = document.getElementById('display-sender');
   const displayRecipient = document.getElementById('display-recipient');
   const puzzleGroup = document.getElementById('puzzle-group');
   const puzzleImgElem = document.getElementById('puzzle-image-elem');
   const bubbleTooltip = document.getElementById('piece-compliment');
   const bubbleText = document.getElementById('bubble-text');
-  
-  // Audio Elements
+  const btnReorderPuzzle = document.getElementById('btn-reorder-puzzle');
+  const btnChangePhoto = document.getElementById('btn-change-photo');
+  const specialDay20 = document.getElementById('special-day-20');
+  const btnMainCelebrate = document.getElementById('btn-main-celebrate');
+  const coupleTitleWrap = document.getElementById('couple-title-wrap');
+
+  // Lyrics Bar
+  const lyricsBar = document.getElementById('lyrics-bar');
+  const lyricsText = document.getElementById('lyrics-text');
+
+  // Audio Controls
   const bgAudio = document.getElementById('bg-audio');
   const musicBtn = document.getElementById('music-btn');
   const musicDisc = document.getElementById('music-disc');
   const musicStatus = document.getElementById('music-status');
-  
-  // Dialog Elements
+
+  // Modals & Forms
   const wishesDialog = document.getElementById('wishes-dialog');
   const photoDialog = document.getElementById('photo-dialog');
   const namesDialog = document.getElementById('names-dialog');
-  
-  // Buttons
-  const btnOpenWishes = document.getElementById('btn-open-wishes');
-  const btnReorderPuzzle = document.getElementById('btn-reorder-puzzle');
-  const btnChangePhoto = document.getElementById('btn-change-photo');
-  const btnCustomText = document.getElementById('btn-custom-text');
-  const btnShareLink = document.getElementById('btn-share-link');
-  const btnMainCelebrate = document.getElementById('btn-main-celebrate');
-  const specialDay20 = document.getElementById('special-day-20');
-  const coupleTitleWrap = document.getElementById('couple-title-wrap');
-  
-  // Dialog Internal Controls
   const btnCloseDialog = document.getElementById('btn-close-dialog');
   const btnClosePhotoDialog = document.getElementById('btn-close-photo-dialog');
   const btnCloseNamesDialog = document.getElementById('btn-close-names-dialog');
+  const namesForm = document.getElementById('names-form');
+  const inputSender = document.getElementById('input-sender');
+  const inputRecipient = document.getElementById('input-recipient');
   const btnTriggerFireworks = document.getElementById('btn-trigger-fireworks');
   const btnCopyWishes = document.getElementById('btn-copy-wishes');
   const imageFileInput = document.getElementById('image-file-input');
   const toastMessage = document.getElementById('toast-message');
 
-  // Letter DOM elements
+  // Letter Elements
   const modalRecipientTag = document.getElementById('modal-recipient-tag');
   const letterLead = document.getElementById('letter-lead');
   const letterP1 = document.getElementById('letter-p1');
@@ -140,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const letterContentDisplay = document.getElementById('letter-content-display');
 
   // ============================================================
-  // 3. WEB AUDIO API SYNTHESIZER (Sound Effects & Chimes)
+  // 3. SOUND SYNTHESIS (Web Audio API)
   // ============================================================
   let audioCtx = null;
 
@@ -170,9 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
       gain.connect(audioCtx.destination);
       osc.start();
       osc.stop(audioCtx.currentTime + duration);
-    } catch (e) {
-      // Audio context error guarded
-    }
+    } catch (_) {}
   }
 
   function playMagicalArpeggio() {
@@ -183,7 +209,269 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================
-  // 4. GENERATE JIGSAW PUZZLE PIECES (27 Heart Grid Pieces)
+  // 4. SCENE NAVIGATION & TRANSITIONS
+  // ============================================================
+  function switchScene(sceneName, isManual = false) {
+    if (isManual) {
+      state.userManualSceneOverride = true;
+    }
+    state.activeScene = sceneName;
+
+    // Update Top Tabs
+    navTabs.forEach(tab => {
+      const isTarget = tab.getAttribute('data-scene') === sceneName;
+      tab.classList.toggle('active', isTarget);
+    });
+
+    // Update Scene Panes
+    scenePanes.forEach(pane => {
+      const isTarget = pane.id === `scene-${sceneName}`;
+      pane.classList.toggle('active-scene', isTarget);
+    });
+
+    // Special scene triggers
+    if (sceneName === 'bloom') {
+      // Bloom state
+    } else if (sceneName === 'sphere') {
+      // 3D sphere viewport active
+    } else if (sceneName === 'frame') {
+      // Frame active
+    }
+  }
+
+  navTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetScene = tab.getAttribute('data-scene');
+      playChime(659.25, 'sine', 0.3);
+      switchScene(targetScene, true);
+    });
+  });
+
+  // Replay Story Button
+  btnReplayStory.addEventListener('click', () => {
+    state.userManualSceneOverride = false;
+    bgAudio.currentTime = 0;
+    switchScene('bloom', false);
+    if (bloomWrapper) bloomWrapper.classList.remove('blooming');
+    if (bgAudio.paused) {
+      toggleMusic();
+    }
+    showToast('Bắt đầu câu chuyện tự động từ đầu ✨');
+  });
+
+  // Bloom Screen Click to Start
+  if (bloomWrapper) {
+    bloomWrapper.addEventListener('click', () => {
+      state.userManualSceneOverride = false;
+      bloomWrapper.classList.add('blooming');
+      if (bgAudio.paused) {
+        toggleMusic();
+      }
+      playMagicalArpeggio();
+    });
+  }
+
+  // ============================================================
+  // 5. TIMELINE & SYNCHRONIZED LYRICS
+  // ============================================================
+  const lyricsTimeline = [
+    { start: 0.0, end: 4.5, text: "CHỜ ANH CHÚT...", scene: 'bloom' },
+    { start: 4.5, end: 11.0, text: "CHỜ CHÚT THÔI, RỒI ANH SẼ TÌM TỚI", scene: 'bloom', bloomTrigger: true },
+    { start: 11.0, end: 16.5, text: "ĐÃ PHIỀN", scene: 'sphere' },
+    { start: 16.5, end: 22.5, text: "CÓ ANH Ở ĐÂY RỒI!!", scene: 'sphere' },
+    { start: 22.5, end: 28.5, text: "Cầm tay anh, dựa vai anh", scene: 'sphere' },
+    { start: 28.5, end: 36.0, text: "Ngàn ánh sao vụt qua nhẹ ôm lấy em", scene: 'card' },
+    { start: 36.0, end: 43.5, text: "Nguyện mãi bên cạnh nhau yêu say đắm như ngày đầu", scene: 'card' },
+    { start: 43.5, end: 999.0, text: "CHÚC MỪNG NGÀY PHỤ NỮ VIỆT NAM 20/10 💖", scene: 'frame' }
+  ];
+
+  bgAudio.addEventListener('timeupdate', () => {
+    const curTime = bgAudio.currentTime;
+    const currentItem = lyricsTimeline.find(item => curTime >= item.start && curTime < item.end);
+
+    if (currentItem) {
+      if (lyricsText && lyricsText.textContent !== currentItem.text) {
+        lyricsText.style.opacity = '0';
+        setTimeout(() => {
+          lyricsText.textContent = currentItem.text;
+          lyricsText.style.opacity = '1';
+        }, 150);
+      }
+
+      if (!state.userManualSceneOverride) {
+        if (state.activeScene !== currentItem.scene) {
+          switchScene(currentItem.scene, false);
+        }
+        if (currentItem.bloomTrigger && bloomWrapper) {
+          bloomWrapper.classList.add('blooming');
+        }
+      }
+    }
+  });
+
+  // ============================================================
+  // 6. SCENE 2: 3D MEMORY SPHERE GENERATOR & DRAG ROTATION
+  // ============================================================
+  const memoryPhotos = [
+    { src: 'assets/photo-couple.jpg', title: 'Khoảnh khắc ngọt ngào ❤️' },
+    { src: 'assets/mem-1.jpg', title: 'Nụ cười rực rỡ ✨' },
+    { src: 'assets/mem-2.jpg', title: 'Tình yêu đong đầy 🌹' },
+    { src: 'assets/mem-3.jpg', title: 'Bình yên bên em 🌸' },
+    { src: 'assets/mem-4.jpg', title: 'Tay trong tay 👫' },
+    { src: 'assets/photo-girl.jpg', title: 'Ánh mắt dịu dàng 💫' },
+    { src: 'assets/mem-5.jpg', title: 'Hạnh phúc giản đơn 🍀' },
+    { src: 'assets/mem-6.jpg', title: 'Mãi mãi bên nhau 💍' },
+    { src: 'assets/mem-7.jpg', title: 'Kỷ niệm thu vàng 🍂' },
+    { src: 'assets/photo-mother.jpg', title: 'Thương yêu vô bờ 💐' },
+    { src: 'assets/mem-8.jpg', title: 'Tỏa sáng mỗi ngày 🌟' },
+    { src: 'assets/photo-flowers.jpg', title: '20/10 vẹn tròn 🌷' }
+  ];
+
+  const floatingQuotes = [
+    "CÓ ANH Ở ĐÂY RỒI!!",
+    "Cầm tay anh, dựa vai anh",
+    "Ngàn ánh sao ôm lấy em ✨",
+    "Yêu em say đắm ❤️",
+    "Bình yên của anh 🕊️",
+    "20/10 ngập tràn hạnh phúc 🎉"
+  ];
+
+  function build3DSphere() {
+    if (!orbitContainer) return;
+    orbitContainer.innerHTML = '';
+
+    const nodes = [];
+
+    // Combine photos and quotes
+    memoryPhotos.forEach(p => nodes.push({ type: 'photo', data: p }));
+    floatingQuotes.forEach(q => nodes.push({ type: 'quote', text: q }));
+
+    const total = nodes.length; // 18 nodes
+    const sphereRadius = window.innerWidth > 768 ? 260 : 190;
+
+    nodes.forEach((node, i) => {
+      const phi = Math.acos(1 - 2 * (i + 0.5) / total);
+      const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+
+      const x = sphereRadius * Math.sin(phi) * Math.cos(theta);
+      const y = sphereRadius * Math.cos(phi);
+      const z = sphereRadius * Math.sin(phi) * Math.sin(theta);
+
+      const rotY = (Math.atan2(x, z) * 180 / Math.PI);
+      const rotX = (-Math.asin(y / sphereRadius) * 180 / Math.PI);
+
+      if (node.type === 'photo') {
+        const item = document.createElement('div');
+        item.className = 'polaroid-item';
+        item.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) rotateY(${rotY.toFixed(1)}deg) rotateX(${rotX.toFixed(1)}deg)`;
+
+        const img = document.createElement('img');
+        img.src = node.data.src;
+        img.alt = node.data.title;
+        img.loading = 'lazy';
+
+        const cap = document.createElement('div');
+        cap.className = 'polaroid-caption';
+        cap.textContent = node.data.title;
+
+        item.appendChild(img);
+        item.appendChild(cap);
+
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          playChime(783.99, 'sine', 0.4);
+          setPuzzlePhoto(node.data.src);
+          showToast(`Đã chọn ảnh kỷ niệm: ${node.data.title}`);
+        });
+
+        orbitContainer.appendChild(item);
+      } else {
+        const tag = document.createElement('div');
+        tag.className = 'quote-tag';
+        tag.textContent = node.text;
+        tag.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) rotateY(${rotY.toFixed(1)}deg) rotateX(${rotX.toFixed(1)}deg)`;
+        orbitContainer.appendChild(tag);
+      }
+    });
+  }
+
+  // 3D Sphere Drag Interaction
+  let isDraggingSphere = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let curRotX = -12;
+  let curRotY = 0;
+  let targetRotX = -12;
+  let targetRotY = 0;
+
+  if (sphereViewport) {
+    sphereViewport.addEventListener('pointerdown', (e) => {
+      isDraggingSphere = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      sphereViewport.setPointerCapture(e.pointerId);
+    });
+
+    sphereViewport.addEventListener('pointermove', (e) => {
+      if (!isDraggingSphere) return;
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+
+      targetRotY += dx * 0.45;
+      targetRotX -= dy * 0.45;
+      targetRotX = Math.max(-75, Math.min(75, targetRotX));
+    });
+
+    const endSphereDrag = (e) => {
+      if (isDraggingSphere) {
+        isDraggingSphere = false;
+        try { sphereViewport.releasePointerCapture(e.pointerId); } catch (_) {}
+      }
+    };
+
+    sphereViewport.addEventListener('pointerup', endSphereDrag);
+    sphereViewport.addEventListener('pointercancel', endSphereDrag);
+  }
+
+  function animate3DSphere() {
+    if (!isDraggingSphere) {
+      targetRotY += 0.22; // gentle auto-rotation
+    }
+    curRotX += (targetRotX - curRotX) * 0.08;
+    curRotY += (targetRotY - curRotY) * 0.08;
+
+    if (world3d) {
+      world3d.style.transform = `rotateX(${curRotX.toFixed(2)}deg) rotateY(${curRotY.toFixed(2)}deg)`;
+    }
+    requestAnimationFrame(animate3DSphere);
+  }
+
+  // ============================================================
+  // 7. SCENE 3: CUTE CARD SETUP
+  // ============================================================
+  function setupCuteCard() {
+    if (cuteCardTitle) cuteCardTitle.textContent = `Gửi ${state.recipient} !`;
+    if (cuteCardSignature) cuteCardSignature.textContent = `${state.sender} ❤️`;
+
+    if (backdropPhotosGrid) {
+      backdropPhotosGrid.innerHTML = '';
+      const sampleBackdrops = memoryPhotos.slice(0, 8);
+      sampleBackdrops.forEach((p, idx) => {
+        const thumb = document.createElement('img');
+        thumb.src = p.src;
+        thumb.alt = p.title;
+        thumb.className = 'backdrop-thumb';
+        const rot = ((idx % 2 === 0 ? 1 : -1) * (4 + (idx % 5) * 2));
+        thumb.style.setProperty('--rot', `${rot}deg`);
+        backdropPhotosGrid.appendChild(thumb);
+      });
+    }
+  }
+
+  // ============================================================
+  // 8. SCENE 4: SVG JIGSAW PUZZLE (Heart Shape)
   // ============================================================
   function buildJigsawEdge(x1, y1, x2, y2, dir) {
     if (dir === 0) {
@@ -198,105 +486,95 @@ document.addEventListener('DOMContentLoaded', () => {
     const ny = ux * dir;
 
     const pt = (t, d) => {
-      const px = x1 + t * dx + d * L * nx;
-      const py = y1 + t * dy + d * L * ny;
+      const px = x1 + dx * t + nx * d * L;
+      const py = y1 + dy * t + ny * d * L;
       return `${px.toFixed(1)} ${py.toFixed(1)}`;
     };
 
-    return ` L ${pt(0.35, 0)} ` +
-           `C ${pt(0.35, -0.05)} ${pt(0.38, 0.05)} ${pt(0.38, 0.20)} ` +
-           `C ${pt(0.38, 0.36)} ${pt(0.62, 0.36)} ${pt(0.62, 0.20)} ` +
-           `C ${pt(0.62, 0.05)} ${pt(0.65, -0.05)} ${pt(0.65, 0)} ` +
-           `L ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+    return ` L ${pt(0.38, 0)} ` +
+           ` C ${pt(0.36, 0.08)}, ${pt(0.32, 0.22)}, ${pt(0.42, 0.24)} ` +
+           ` C ${pt(0.48, 0.26)}, ${pt(0.52, 0.26)}, ${pt(0.58, 0.24)} ` +
+           ` C ${pt(0.68, 0.22)}, ${pt(0.64, 0.08)}, ${pt(0.62, 0)} ` +
+           ` L ${x2.toFixed(1)} ${y2.toFixed(1)}`;
   }
 
   function generateHeartPuzzle() {
-    const cols = 7;
+    if (!puzzleGroup) return;
+    puzzleGroup.innerHTML = '';
+
+    const cols = 6;
     const rows = 6;
-    const cellW = 46;
-    const cellH = 46;
-    const originX = 35;
-    const originY = 30;
+    const width = 360;
+    const height = 310;
+    const startX = 20;
+    const startY = 15;
+    const cellW = width / cols;
+    const cellH = height / rows;
 
-    const heartGrid = [
-      [0, 1, 1, 0, 1, 1, 0],
-      [1, 1, 1, 1, 1, 1, 1],
-      [1, 1, 1, 1, 1, 1, 1],
-      [0, 1, 1, 1, 1, 1, 0],
-      [0, 0, 1, 1, 1, 0, 0],
-      [0, 0, 0, 1, 0, 0, 0]
-    ];
-
-    const vEdges = [];
-    for (let r = 0; r < rows; r++) {
-      vEdges[r] = [];
-      for (let c = 0; c <= cols; c++) {
-        vEdges[r][c] = ((r * 7 + c * 13) % 2 === 0) ? 1 : -1;
+    const hDirs = [];
+    for (let r = 0; r <= rows; r++) {
+      hDirs[r] = [];
+      for (let c = 0; c < cols; c++) {
+        hDirs[r][c] = (r === 0 || r === rows) ? 0 : ((r + c) % 2 === 0 ? 1 : -1);
       }
     }
 
-    const hEdges = [];
-    for (let r = 0; r <= rows; r++) {
-      hEdges[r] = [];
-      for (let c = 0; c < cols; c++) {
-        hEdges[r][c] = ((r * 11 + c * 5) % 2 === 0) ? 1 : -1;
+    const vDirs = [];
+    for (let r = 0; r < rows; r++) {
+      vDirs[r] = [];
+      for (let c = 0; c <= cols; c++) {
+        vDirs[r][c] = (c === 0 || c === cols) ? 0 : ((r + c) % 2 === 0 ? -1 : 1);
       }
     }
 
     let pieceIndex = 0;
-    puzzleGroup.innerHTML = '';
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        if (!heartGrid[r][c]) continue;
+        const x0 = startX + c * cellW;
+        const y0 = startY + r * cellH;
+        const x1 = x0 + cellW;
+        const y1 = y0 + cellH;
 
-        const x = originX + c * cellW;
-        const y = originY + r * cellH;
+        // Skip corner pieces to form a heart contour
+        if ((r === 0 && (c === 0 || c === 5)) ||
+            (r === 4 && (c === 0 || c === 5)) ||
+            (r === 5 && (c <= 1 || c >= 4))) {
+          continue;
+        }
 
-        // Tabs for inner and outer edges (giving authentic jigsaw puzzle shape)
-        const topDir = (r > 0 && heartGrid[r - 1][c]) ? -hEdges[r][c] : (((r * 5 + c * 11) % 2 === 0) ? 1 : -1);
-        const rightDir = (c < cols - 1 && heartGrid[r][c + 1]) ? vEdges[r][c + 1] : (((c * 7 + r * 13) % 2 === 0) ? 1 : -1);
-        const botDir = (r < rows - 1 && heartGrid[r + 1][c]) ? hEdges[r + 1][c] : (((r * 9 + c * 3) % 2 === 0) ? -1 : 1);
-        const leftDir = (c > 0 && heartGrid[r][c - 1]) ? -vEdges[r][c] : (((c * 17 + r * 5) % 2 === 0) ? -1 : 1);
+        const topDir = hDirs[r][c];
+        const rightDir = vDirs[r][c + 1];
+        const bottomDir = -hDirs[r + 1][c];
+        const leftDir = -vDirs[r][c];
 
-        let d = `M ${x.toFixed(1)} ${y.toFixed(1)}`;
-        d += buildJigsawEdge(x, y, x + cellW, y, topDir);
-        d += buildJigsawEdge(x + cellW, y, x + cellW, y + cellH, rightDir);
-        d += buildJigsawEdge(x + cellW, y + cellH, x, y + cellH, botDir);
-        d += buildJigsawEdge(x, y + cellH, x, y, leftDir);
+        let d = `M ${x0.toFixed(1)} ${y0.toFixed(1)}`;
+        d += buildJigsawEdge(x0, y0, x1, y0, topDir);
+        d += buildJigsawEdge(x1, y0, x1, y1, rightDir);
+        d += buildJigsawEdge(x1, y1, x0, y1, bottomDir);
+        d += buildJigsawEdge(x0, y1, x0, y0, leftDir);
         d += ' Z';
 
-        const comp = compliments[pieceIndex % compliments.length];
-        
-        // Random scatter offsets for animation
-        const scatterX = ((pieceIndex * 29) % 80) - 40;
-        const scatterY = ((pieceIndex * 37) % 70) - 35;
-        const scatterRot = ((pieceIndex * 19) % 40) - 20;
-
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('id', `piece-${pieceIndex}`);
-        path.setAttribute('class', 'puzzle-piece');
-        path.setAttribute('data-index', pieceIndex);
-        path.setAttribute('data-compliment', comp);
-        path.setAttribute('data-scatter-x', scatterX);
-        path.setAttribute('data-scatter-y', scatterY);
-        path.setAttribute('data-scatter-rot', scatterRot);
         path.setAttribute('d', d);
+        path.setAttribute('class', 'puzzle-piece');
         path.setAttribute('fill', 'url(#puzzle-img-pattern)');
-        path.setAttribute('stroke', 'rgba(255, 255, 255, 0.75)');
+        path.setAttribute('stroke', '#f6d365');
         path.setAttribute('stroke-width', '1.2');
-        path.setAttribute('stroke-linejoin', 'round');
-        path.setAttribute('tabindex', '0');
-        path.setAttribute('role', 'button');
-        path.setAttribute('aria-label', `Mảnh ghép ${pieceIndex + 1}: ${comp}`);
+        path.setAttribute('data-id', pieceIndex);
 
-        // Event Listeners for Pieces
-        path.addEventListener('click', (e) => onPieceClicked(path, comp));
-        path.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onPieceClicked(path, comp);
-          }
+        const complimentText = compliments[pieceIndex % compliments.length];
+        path.setAttribute('data-compliment', complimentText);
+
+        const cx = (x0 + x1) / 2;
+        const cy = (y0 + y1) / 2;
+        path.setAttribute('data-cx', cx);
+        path.setAttribute('data-cy', cy);
+
+        // Click / touch interaction
+        path.addEventListener('click', (e) => {
+          e.stopPropagation();
+          handlePieceClick(path, complimentText);
         });
 
         puzzleGroup.appendChild(path);
@@ -305,86 +583,84 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  let bubbleTimer = null;
-  function onPieceClicked(pieceElem, complimentText) {
-    initAudioContext();
-    playChime(659.25 + (Math.random() * 200 - 100), 'sine', 0.35);
+  function handlePieceClick(path, complimentText) {
+    playChime(587.33, 'triangle', 0.4);
+    path.classList.add('pulse-piece');
+    setTimeout(() => path.classList.remove('pulse-piece'), 600);
 
-    // Visual highlight on piece
-    document.querySelectorAll('.puzzle-piece').forEach(p => p.classList.remove('active-piece'));
-    pieceElem.classList.add('active-piece');
-
-    // Show compliment bubble
-    bubbleText.textContent = complimentText;
-    bubbleTooltip.classList.add('visible');
-
-    if (bubbleTimer) clearTimeout(bubbleTimer);
-    bubbleTimer = setTimeout(() => {
-      bubbleTooltip.classList.remove('visible');
-    }, 3200);
-
-    // Burst a few mini hearts at cursor
-    spawnMiniHeartsBurst();
-  }
-
-  // Toggle Scatter & Reassemble Animation
-  function togglePuzzleScatter() {
-    const pieces = document.querySelectorAll('.puzzle-piece');
-    state.isScattered = !state.isScattered;
-
-    if (state.isScattered) {
-      initAudioContext();
-      playChime(392.00, 'sawtooth', 0.4);
-      btnReorderPuzzle.innerHTML = '<span class="icon">✨</span> Lắp Ráp';
-      showToast('Đã tháo rời các mảnh ghép! Nhấn lần nữa để ghép lại.');
-
-      pieces.forEach(p => {
-        const sx = p.getAttribute('data-scatter-x');
-        const sy = p.getAttribute('data-scatter-y');
-        const srot = p.getAttribute('data-scatter-rot');
-        p.classList.add('scattered');
-        p.style.transform = `translate(${sx}px, ${sy}px) rotate(${srot}deg)`;
-      });
-    } else {
-      playMagicalArpeggio();
-      btnReorderPuzzle.innerHTML = '<span class="icon">🧩</span> Ghép Hình';
-      showToast('Trái tim đã được ghép lại trọn vẹn! ❤️');
-
-      pieces.forEach(p => {
-        p.style.transform = 'translate(0px, 0px) rotate(0deg)';
-      });
-
-      setTimeout(() => {
-        pieces.forEach(p => p.classList.remove('scattered'));
-      }, 700);
+    if (bubbleText) bubbleText.textContent = complimentText;
+    if (bubbleTooltip) {
+      bubbleTooltip.classList.add('visible');
+      setTimeout(() => bubbleTooltip.classList.remove('visible'), 3600);
     }
   }
 
+  function togglePuzzleScatter() {
+    state.isScattered = !state.isScattered;
+    const pieces = document.querySelectorAll('.puzzle-piece');
+
+    pieces.forEach((piece, idx) => {
+      if (state.isScattered) {
+        const randX = (Math.random() - 0.5) * 160;
+        const randY = (Math.random() - 0.5) * 140;
+        const randRot = (Math.random() - 0.5) * 70;
+        piece.style.transform = `translate(${randX.toFixed(1)}px, ${randY.toFixed(1)}px) rotate(${randRot.toFixed(1)}deg)`;
+        piece.style.opacity = '0.85';
+      } else {
+        piece.style.transform = 'translate(0px, 0px) rotate(0deg)';
+        piece.style.opacity = '1';
+      }
+    });
+
+    if (btnReorderPuzzle) {
+      btnReorderPuzzle.innerHTML = state.isScattered ?
+        '<span class="icon">✨</span> Ghép Lại' :
+        '<span class="icon">🧩</span> Xáo Trộn';
+    }
+
+    if (state.isScattered) {
+      playChime(440, 'sawtooth', 0.3);
+      showToast('Đã xáo trộn các mảnh ghép!');
+    } else {
+      playMagicalArpeggio();
+      showToast('Đã ghép lại trái tim hoàn chỉnh!');
+    }
+  }
+
+  function setPuzzlePhoto(src) {
+    state.photoSrc = src;
+    localStorage.setItem('womenDay_photo', src);
+    if (puzzleImgElem) puzzleImgElem.setAttribute('href', src);
+
+    document.querySelectorAll('.photo-preset-item').forEach(item => {
+      item.classList.toggle('active', item.getAttribute('data-src') === src);
+    });
+  }
+
   // ============================================================
-  // 5. AUDIO CONTROLLER & BACKGROUND MUSIC
+  // 9. AUDIO CONTROLLER & BACKGROUND MUSIC
   // ============================================================
   function toggleMusic() {
     initAudioContext();
     if (bgAudio.paused) {
       bgAudio.play().then(() => {
         state.isPlayingMusic = true;
-        musicDisc.classList.add('playing');
-        musicStatus.textContent = 'Đang phát nhạc 🎶';
-        showToast('Đang phát bài hát "Chờ chút thôi, rồi anh sẽ tìm tới"');
+        if (musicDisc) musicDisc.classList.add('playing');
+        if (musicStatus) musicStatus.textContent = 'Đang phát nhạc 🎶';
+        showToast('Đang phát: "Chờ chút thôi, rồi anh sẽ tìm tới"');
       }).catch(err => {
         console.warn('Audio play restricted:', err);
-        showToast('Vui lòng tương tác với trang để bật nhạc!');
+        showToast('Vui lòng chạm màn hình để phát nhạc!');
       });
     } else {
       bgAudio.pause();
       state.isPlayingMusic = false;
-      musicDisc.classList.remove('playing');
-      musicStatus.textContent = 'Nhạc đã tạm dừng';
+      if (musicDisc) musicDisc.classList.remove('playing');
+      if (musicStatus) musicStatus.textContent = 'Nhạc tạm dừng';
       showToast('Đã tạm dừng bài hát');
     }
   }
 
-  // Automatic Audio Unlock on First User Click
   function attemptAutoPlay() {
     if (state.audioUnlocked) return;
     state.audioUnlocked = true;
@@ -392,8 +668,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (bgAudio.paused && !state.isPlayingMusic) {
       bgAudio.play().then(() => {
         state.isPlayingMusic = true;
-        musicDisc.classList.add('playing');
-        musicStatus.textContent = 'Đang phát nhạc 🎶';
+        if (musicDisc) musicDisc.classList.add('playing');
+        if (musicStatus) musicStatus.textContent = 'Đang phát nhạc 🎶';
       }).catch(() => {});
     }
     document.removeEventListener('click', attemptAutoPlay);
@@ -404,14 +680,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('touchstart', attemptAutoPlay, { once: true });
 
   // ============================================================
-  // 6. ATMOSPHERIC CANVAS EFFECTS
+  // 10. ATMOSPHERIC PARTICLES & PETALS CANVASES
   // ============================================================
-  // Ambient Canvas: Twinkling Stars & Fireflies
   const ambCanvas = document.getElementById('ambient-canvas');
-  const ambCtx = ambCanvas.getContext('2d');
+  const ambCtx = ambCanvas ? ambCanvas.getContext('2d') : null;
   let stars = [];
 
   function resizeAmbientCanvas() {
+    if (!ambCanvas) return;
     ambCanvas.width = window.innerWidth;
     ambCanvas.height = window.innerHeight;
     stars = [];
@@ -430,6 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function drawAmbient() {
+    if (!ambCtx || !ambCanvas) return;
     ambCtx.clearRect(0, 0, ambCanvas.width, ambCanvas.height);
     const now = Date.now() * 0.001;
 
@@ -445,25 +722,14 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(drawAmbient);
   }
 
-  // Petals Canvas: Soft Falling Rose Petals
   const petalsCanvas = document.getElementById('petals-canvas');
-  const petalsCtx = petalsCanvas.getContext('2d');
+  const petalsCtx = petalsCanvas ? petalsCanvas.getContext('2d') : null;
   let petals = [];
-
-  function resizePetalsCanvas() {
-    petalsCanvas.width = window.innerWidth;
-    petalsCanvas.height = window.innerHeight;
-    petals = [];
-    const count = window.innerWidth > 768 ? 24 : 14;
-    for (let i = 0; i < count; i++) {
-      petals.push(createPetal(true));
-    }
-  }
 
   function createPetal(randomY = false) {
     return {
-      x: Math.random() * petalsCanvas.width,
-      y: randomY ? Math.random() * petalsCanvas.height : -30,
+      x: Math.random() * (petalsCanvas ? petalsCanvas.width : 500),
+      y: randomY ? Math.random() * (petalsCanvas ? petalsCanvas.height : 500) : -30,
       size: Math.random() * 14 + 10,
       speedY: Math.random() * 1.2 + 0.8,
       speedX: Math.random() * 0.8 - 0.4,
@@ -475,355 +741,304 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
+  function resizePetalsCanvas() {
+    if (!petalsCanvas) return;
+    petalsCanvas.width = window.innerWidth;
+    petalsCanvas.height = window.innerHeight;
+    petals = [];
+    const count = window.innerWidth > 768 ? 24 : 14;
+    for (let i = 0; i < count; i++) {
+      petals.push(createPetal(true));
+    }
+  }
+
   function drawPetals() {
+    if (!petalsCtx || !petalsCanvas) return;
     petalsCtx.clearRect(0, 0, petalsCanvas.width, petalsCanvas.height);
 
     for (let p of petals) {
       p.y += p.speedY;
       p.swing += p.swingSpeed;
-      p.x += Math.sin(p.swing) * 1.2 + p.speedX;
+      p.x += Math.sin(p.swing) * 0.6 + p.speedX;
       p.rot += p.rotSpeed;
+
+      if (p.y > petalsCanvas.height + 40) {
+        Object.assign(p, createPetal(false));
+      }
 
       petalsCtx.save();
       petalsCtx.translate(p.x, p.y);
       petalsCtx.rotate(p.rot);
 
       petalsCtx.beginPath();
-      petalsCtx.moveTo(0, -p.size * 0.5);
-      petalsCtx.bezierCurveTo(p.size * 0.6, -p.size * 0.5, p.size * 0.6, p.size * 0.4, 0, p.size * 0.6);
-      petalsCtx.bezierCurveTo(-p.size * 0.6, p.size * 0.4, -p.size * 0.6, -p.size * 0.5, 0, -p.size * 0.5);
-      petalsCtx.fillStyle = p.color + '0.75)';
-      petalsCtx.shadowBlur = 4;
-      petalsCtx.shadowColor = 'rgba(255, 105, 135, 0.4)';
+      petalsCtx.ellipse(0, 0, p.size * 0.5, p.size, 0, 0, Math.PI * 2);
+      petalsCtx.fillStyle = `${p.color}0.75)`;
+      petalsCtx.shadowBlur = 6;
+      petalsCtx.shadowColor = 'rgba(255, 117, 140, 0.4)';
       petalsCtx.fill();
 
       petalsCtx.restore();
-
-      if (p.y > petalsCanvas.height + 40 || p.x < -50 || p.x > petalsCanvas.width + 50) {
-        Object.assign(p, createPetal(false));
-      }
     }
     requestAnimationFrame(drawPetals);
   }
 
-  // Fireworks & Heart Particles Burst
+  // ============================================================
+  // 11. FIREWORKS & CONFETTI CELEBRATION EFFECT
+  // ============================================================
   function triggerFireworksEffect() {
-    initAudioContext();
     playMagicalArpeggio();
 
-    const burstColors = ['#ff4757', '#ffa502', '#2ed573', '#1e90ff', '#e056fd', '#f1f2f6'];
-    const burstCount = 60;
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
+    const particles = [];
+    const colors = ['#ff758c', '#f6d365', '#fda085', '#2ed573', '#1e90ff', '#ffffff', '#e84118'];
 
-    for (let i = 0; i < burstCount; i++) {
-      const particle = document.createElement('div');
-      const angle = (Math.PI * 2 / burstCount) * i + (Math.random() - 0.5);
-      const velocity = Math.random() * 180 + 120;
-      const isHeart = Math.random() > 0.4;
-
-      particle.style.position = 'fixed';
-      particle.style.left = `${centerX}px`;
-      particle.style.top = `${centerY}px`;
-      particle.style.pointerEvents = 'none';
-      particle.style.zIndex = '9999';
-      particle.style.fontSize = isHeart ? `${Math.random() * 16 + 14}px` : '0px';
-      particle.textContent = isHeart ? (Math.random() > 0.5 ? '❤️' : '✨') : '';
-
-      if (!isHeart) {
-        const size = Math.random() * 8 + 4;
-        particle.style.width = `${size}px`;
-        particle.style.height = `${size}px`;
-        particle.style.borderRadius = '50%';
-        particle.style.background = burstColors[Math.floor(Math.random() * burstColors.length)];
-        particle.style.boxShadow = `0 0 10px ${particle.style.background}`;
-      }
-
-      document.body.appendChild(particle);
-
-      const anim = particle.animate([
-        {
-          transform: 'translate(0, 0) scale(1)',
-          opacity: 1
-        },
-        {
-          transform: `translate(${Math.cos(angle) * velocity}px, ${Math.sin(angle) * velocity + 60}px) scale(0)`,
-          opacity: 0
-        }
-      ], {
-        duration: Math.random() * 800 + 700,
-        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)'
-      });
-
-      anim.onfinish = () => particle.remove();
-    }
-
-    showToast('💐 Chúc mừng ngày Phụ nữ Việt Nam 20/10! 💐');
-  }
-
-  function spawnMiniHeartsBurst() {
-    const symbols = ['❤️', '✨', '🌸', '💖'];
-    const bubbleRect = bubbleTooltip.getBoundingClientRect();
-    const bx = bubbleRect.left + bubbleRect.width / 2;
-    const by = bubbleRect.top;
-
-    for (let i = 0; i < 6; i++) {
-      const p = document.createElement('span');
-      p.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-      p.style.position = 'fixed';
-      p.style.left = `${bx}px`;
-      p.style.top = `${by}px`;
-      p.style.pointerEvents = 'none';
-      p.style.fontSize = '18px';
-      p.style.zIndex = '999';
-
+    for (let i = 0; i < 40; i++) {
+      const p = document.createElement('div');
+      p.className = 'celebration-spark';
+      p.style.cssText = `
+        position: fixed;
+        left: 50vw;
+        top: 50vh;
+        width: 10px;
+        height: 10px;
+        background: ${colors[Math.floor(Math.random() * colors.length)]};
+        border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+        pointer-events: none;
+        z-index: 9999;
+        box-shadow: 0 0 12px currentColor;
+        transition: transform 1.2s cubic-bezier(0.1, 0.8, 0.3, 1), opacity 1.2s ease;
+      `;
       document.body.appendChild(p);
+      particles.push(p);
 
-      const dx = (Math.random() - 0.5) * 80;
-      const dy = -Math.random() * 60 - 20;
+      const angle = (Math.PI * 2 / 40) * i + Math.random() * 0.2;
+      const dist = Math.random() * 260 + 120;
+      const tx = Math.cos(angle) * dist;
+      const ty = Math.sin(angle) * dist;
 
-      const anim = p.animate([
-        { transform: 'translate(0, 0) scale(0.8)', opacity: 1 },
-        { transform: `translate(${dx}px, ${dy}px) scale(1.3)`, opacity: 0 }
-      ], {
-        duration: 900,
-        easing: 'ease-out'
+      requestAnimationFrame(() => {
+        p.style.transform = `translate(${tx}px, ${ty}px) scale(${Math.random() * 1.5 + 0.5})`;
+        p.style.opacity = '0';
       });
 
-      anim.onfinish = () => p.remove();
+      setTimeout(() => p.remove(), 1300);
     }
   }
 
   // ============================================================
-  // 7. WISHES MODAL & CATEGORY SWITCHING
+  // 12. DIALOGS & SETTINGS HANDLERS
   // ============================================================
   function updateWishesContent() {
-    displaySender.textContent = state.sender;
-    displayRecipient.textContent = state.recipient;
+    const data = wishesData[state.category] || wishesData.lover;
+    if (modalRecipientTag) modalRecipientTag.textContent = data.tag;
 
-    if (state.category === 'custom' && state.customWishes.trim()) {
-      modalRecipientTag.textContent = `Dành tặng: ${state.recipient} ❤️`;
-      letterLead.textContent = `${state.recipient} thân yêu,`;
-      letterP1.textContent = state.customWishes;
-      letterP2.textContent = '';
-      letterP3.textContent = '';
-      letterSigName.textContent = state.sender;
-      customEditorBox.style.display = 'block';
-      letterContentDisplay.style.display = 'block';
+    if (state.category === 'custom') {
+      if (customEditorBox) customEditorBox.style.display = 'block';
+      if (letterContentDisplay) letterContentDisplay.style.display = 'none';
     } else {
-      const data = wishesData[state.category] || wishesData.lover;
-      modalRecipientTag.textContent = data.tag;
-      letterLead.textContent = data.lead;
-      letterP1.textContent = data.p1;
-      letterP2.textContent = data.p2;
-      letterP3.textContent = data.p3;
-      letterSigName.textContent = data.sig;
-      customEditorBox.style.display = state.category === 'custom' ? 'block' : 'none';
-      letterContentDisplay.style.display = 'block';
+      if (customEditorBox) customEditorBox.style.display = 'none';
+      if (letterContentDisplay) letterContentDisplay.style.display = 'block';
+      if (letterLead) letterLead.textContent = data.lead;
+      if (letterP1) letterP1.textContent = data.p1;
+      if (letterP2) letterP2.textContent = data.p2;
+      if (letterP3) letterP3.textContent = data.p3;
+      if (letterSigName) letterSigName.textContent = data.sig;
     }
 
-    // Update active tab buttons
     document.querySelectorAll('.cat-tab').forEach(tab => {
-      const cat = tab.getAttribute('data-category');
-      tab.classList.toggle('active', cat === state.category);
-      tab.setAttribute('aria-selected', cat === state.category ? 'true' : 'false');
+      const isSel = tab.getAttribute('data-category') === state.category;
+      tab.classList.toggle('active', isSel);
+      tab.setAttribute('aria-selected', isSel ? 'true' : 'false');
     });
+
+    // Update names on frame & cute card
+    if (displaySender) displaySender.textContent = state.sender;
+    if (displayRecipient) displayRecipient.textContent = state.recipient;
+    setupCuteCard();
   }
 
   function openWishesDialog() {
-    initAudioContext();
-    playMagicalArpeggio();
     updateWishesContent();
-    wishesDialog.showModal();
+    if (wishesDialog) {
+      wishesDialog.showModal();
+      playChime(659.25, 'triangle', 0.4);
+    }
   }
 
   function closeWishesDialog() {
-    wishesDialog.close();
+    if (wishesDialog) wishesDialog.close();
   }
 
-  // ============================================================
-  // 8. PHOTO PRESETS & CUSTOM UPLOAD
-  // ============================================================
   function openPhotoDialog() {
-    initAudioContext();
-    playChime(523.25, 'triangle', 0.25);
-    photoDialog.showModal();
+    if (photoDialog) {
+      photoDialog.showModal();
+      playChime(523.25, 'sine', 0.3);
+    }
   }
 
   function closePhotoDialog() {
-    photoDialog.close();
+    if (photoDialog) photoDialog.close();
   }
 
-  function setPuzzlePhoto(src) {
-    state.photoSrc = src;
-    localStorage.setItem('womenDay_photo', src);
-    puzzleImgElem.setAttribute('href', src);
-
-    // Update active preset styling
-    document.querySelectorAll('.photo-preset-item').forEach(item => {
-      item.classList.toggle('active', item.getAttribute('data-src') === src);
-    });
-
-    showToast('Đã đổi ảnh trong trái tim ghép hình!');
-  }
-
-  // Handle local image file upload
-  imageFileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        showToast('Vui lòng chọn một tệp hình ảnh!');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target.result;
-        setPuzzlePhoto(dataUrl);
-        closePhotoDialog();
-      };
-      reader.readAsDataURL(file);
-    }
-  });
-
-  // ============================================================
-  // 9. NAMES CUSTOMIZATION MODAL
-  // ============================================================
   function openNamesDialog() {
-    initAudioContext();
-    playChime(587.33, 'triangle', 0.25);
-    document.getElementById('input-sender').value = state.sender;
-    document.getElementById('input-recipient').value = state.recipient;
-    namesDialog.showModal();
+    if (inputSender) inputSender.value = state.sender;
+    if (inputRecipient) inputRecipient.value = state.recipient;
+    if (namesDialog) {
+      namesDialog.showModal();
+      playChime(587.33, 'sine', 0.3);
+    }
   }
 
   function closeNamesDialog() {
-    namesDialog.close();
+    if (namesDialog) namesDialog.close();
   }
 
-  document.getElementById('names-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const s = document.getElementById('input-sender').value.trim();
-    const r = document.getElementById('input-recipient').value.trim();
+  // Name Form Submission
+  if (namesForm) {
+    namesForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const s = inputSender ? inputSender.value.trim() : '';
+      const r = inputRecipient ? inputRecipient.value.trim() : '';
+      if (s) state.sender = s;
+      if (r) state.recipient = r;
 
-    if (s) state.sender = s;
-    if (r) state.recipient = r;
+      localStorage.setItem('womenDay_sender', state.sender);
+      localStorage.setItem('womenDay_recipient', state.recipient);
 
-    localStorage.setItem('womenDay_sender', state.sender);
-    localStorage.setItem('womenDay_recipient', state.recipient);
+      updateWishesContent();
+      closeNamesDialog();
+      playMagicalArpeggio();
+      showToast(`Đã cập nhật: ${state.sender} ❤️ ${state.recipient}`);
+    });
+  }
 
-    updateWishesContent();
-    closeNamesDialog();
-    showToast(`Đã lưu: ${state.sender} ❤️ ${state.recipient}`);
-  });
-
-  // Quick Preset Chips in Names Dialog
+  // Name Preset Chips
   document.querySelectorAll('.name-chip').forEach(chip => {
     chip.addEventListener('click', () => {
-      document.getElementById('input-sender').value = chip.getAttribute('data-sender');
-      document.getElementById('input-recipient').value = chip.getAttribute('data-recipient');
+      if (inputSender) inputSender.value = chip.getAttribute('data-sender');
+      if (inputRecipient) inputRecipient.value = chip.getAttribute('data-recipient');
     });
   });
 
-  // ============================================================
-  // 10. SHAREABLE LINK GENERATION
-  // ============================================================
+  // Share Link Builder
   function copyShareLink() {
-    const url = new URL(window.location.href);
-    url.searchParams.set('from', state.sender);
-    url.searchParams.set('to', state.recipient);
-    url.searchParams.set('cat', state.category);
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl}?from=${encodeURIComponent(state.sender)}&to=${encodeURIComponent(state.recipient)}&cat=${encodeURIComponent(state.category)}`;
 
-    navigator.clipboard.writeText(url.toString()).then(() => {
-      showToast('Đã sao chép liên kết chúc mừng vào khay nhớ tạm! 💌');
-    }).catch(() => {
-      showToast('Liên kết: ' + url.toString());
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        showToast('Đã sao chép liên kết thiệp cá nhân hóa!');
+      }).catch(() => {
+        prompt('Sao chép liên kết chia sẻ bên dưới:', shareUrl);
+      });
+    } else {
+      prompt('Sao chép liên kết chia sẻ bên dưới:', shareUrl);
+    }
+    playChime(880, 'sine', 0.3);
+  }
+
+  // Copy Wishes Text
+  function copyWishesText() {
+    const data = wishesData[state.category] || wishesData.lover;
+    const textToCopy = `${data.lead}\n\n${data.p1}\n\n${data.p2}\n\n${data.p3}\n\n${data.sig}`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        showToast('Đã sao chép trọn vẹn lời chúc 20/10!');
+      }).catch(() => {
+        showToast('Không thể tự động sao chép!');
+      });
+    }
+  }
+
+  // Local File Upload
+  if (imageFileInput) {
+    imageFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (loadEvent) => {
+          setPuzzlePhoto(loadEvent.target.result);
+          closePhotoDialog();
+          showToast('Đã tải ảnh kỷ niệm riêng của bạn lên thành công!');
+          playMagicalArpeggio();
+        };
+        reader.readAsDataURL(file);
+      }
     });
   }
 
-  // Copy wishes text to clipboard
-  function copyWishesText() {
-    const text = `${letterLead.textContent}\n\n${letterP1.textContent}\n\n${letterP2.textContent}\n\n${letterP3.textContent}\n\n${letterSigName.textContent}`;
-    navigator.clipboard.writeText(text).then(() => {
-      showToast('Đã sao chép toàn bộ lời chúc! 📋');
-    }).catch(() => {});
-  }
-
-  // Toast Feedback Helper
+  // Toast Helper
   let toastTimer = null;
   function showToast(msg) {
+    if (!toastMessage) return;
     toastMessage.textContent = msg;
     toastMessage.classList.add('show');
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(() => {
       toastMessage.classList.remove('show');
-    }, 3000);
+    }, 3200);
   }
 
   // ============================================================
-  // 11. EVENT LISTENERS WIRING
+  // 13. EVENT LISTENERS WIRING
   // ============================================================
-  // Audio
-  musicBtn.addEventListener('click', toggleMusic);
+  if (musicBtn) musicBtn.addEventListener('click', toggleMusic);
+  if (btnReorderPuzzle) btnReorderPuzzle.addEventListener('click', togglePuzzleScatter);
+  if (btnChangePhoto) btnChangePhoto.addEventListener('click', openPhotoDialog);
+  if (btnCustomNames) btnCustomNames.addEventListener('click', openNamesDialog);
+  if (btnShareLink) btnShareLink.addEventListener('click', copyShareLink);
+  if (btnMainCelebrate) btnMainCelebrate.addEventListener('click', openWishesDialog);
 
-  // Toolbar
-  btnOpenWishes.addEventListener('click', openWishesDialog);
-  btnReorderPuzzle.addEventListener('click', togglePuzzleScatter);
-  btnChangePhoto.addEventListener('click', openPhotoDialog);
-  btnCustomText.addEventListener('click', openNamesDialog);
-  btnShareLink.addEventListener('click', copyShareLink);
-  btnMainCelebrate.addEventListener('click', openWishesDialog);
-  
-  // Special Day 20 click
-  specialDay20.addEventListener('click', () => {
-    triggerFireworksEffect();
-    setTimeout(openWishesDialog, 600);
-  });
-  specialDay20.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
+  if (specialDay20) {
+    specialDay20.addEventListener('click', () => {
       triggerFireworksEffect();
       setTimeout(openWishesDialog, 600);
+    });
+    specialDay20.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        triggerFireworksEffect();
+        setTimeout(openWishesDialog, 600);
+      }
+    });
+  }
+
+  if (coupleTitleWrap) coupleTitleWrap.addEventListener('click', openNamesDialog);
+
+  if (btnCloseDialog) btnCloseDialog.addEventListener('click', closeWishesDialog);
+  if (btnClosePhotoDialog) btnClosePhotoDialog.addEventListener('click', closePhotoDialog);
+  if (btnCloseNamesDialog) btnCloseNamesDialog.addEventListener('click', closeNamesDialog);
+
+  [wishesDialog, photoDialog, namesDialog].forEach(dialog => {
+    if (dialog) {
+      dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) dialog.close();
+      });
     }
   });
 
-  // Header click / double click
-  coupleTitleWrap.addEventListener('click', openNamesDialog);
-
-  // Dialog Close buttons
-  btnCloseDialog.addEventListener('click', closeWishesDialog);
-  btnClosePhotoDialog.addEventListener('click', closePhotoDialog);
-  btnCloseNamesDialog.addEventListener('click', closeNamesDialog);
-
-  // Close dialog on backdrop click (Light Dismiss)
-  [wishesDialog, photoDialog, namesDialog].forEach(dialog => {
-    dialog.addEventListener('click', (e) => {
-      if (e.target === dialog) {
-        dialog.close();
-      }
-    });
-  });
-
-  // Category Tabs inside Wishes Dialog
   document.querySelectorAll('.cat-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       state.category = tab.getAttribute('data-category');
       localStorage.setItem('womenDay_category', state.category);
       updateWishesContent();
-      if (state.category === 'custom') {
+      if (state.category === 'custom' && customWishesInput) {
         customWishesInput.value = state.customWishes || `${state.recipient} thân yêu,\nChúc mừng ngày 20/10 thật hạnh phúc!`;
       }
     });
   });
 
-  // Save Custom Wishes Button
-  btnSaveCustomWishes.addEventListener('click', () => {
-    state.customWishes = customWishesInput.value.trim();
-    localStorage.setItem('womenDay_customWishes', state.customWishes);
-    updateWishesContent();
-    showToast('Đã lưu lời chúc riêng của bạn!');
-  });
+  if (btnSaveCustomWishes) {
+    btnSaveCustomWishes.addEventListener('click', () => {
+      if (customWishesInput) {
+        state.customWishes = customWishesInput.value.trim();
+        localStorage.setItem('womenDay_customWishes', state.customWishes);
+        updateWishesContent();
+        showToast('Đã lưu lời chúc riêng của bạn!');
+      }
+    });
+  }
 
-  // Photo Preset Items click
   document.querySelectorAll('.photo-preset-item').forEach(item => {
     item.addEventListener('click', () => {
       setPuzzlePhoto(item.getAttribute('data-src'));
@@ -831,19 +1046,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Dialog Action buttons
-  btnTriggerFireworks.addEventListener('click', triggerFireworksEffect);
-  btnCopyWishes.addEventListener('click', copyWishesText);
+  if (btnTriggerFireworks) btnTriggerFireworks.addEventListener('click', triggerFireworksEffect);
+  if (btnCopyWishes) btnCopyWishes.addEventListener('click', copyWishesText);
 
-  // Window resize handlers
   window.addEventListener('resize', () => {
     resizeAmbientCanvas();
     resizePetalsCanvas();
+    build3DSphere();
   });
 
   // ============================================================
-  // 12. INITIALIZATION CALLS
+  // 14. INITIALIZATION
   // ============================================================
+  build3DSphere();
+  animate3DSphere();
+  setupCuteCard();
   generateHeartPuzzle();
   setPuzzlePhoto(state.photoSrc);
   updateWishesContent();
@@ -854,7 +1071,9 @@ document.addEventListener('DOMContentLoaded', () => {
   resizePetalsCanvas();
   drawPetals();
 
-  // Subtle assembly animation on first entrance
+  // Initial Scene
+  switchScene('bloom', false);
+
   setTimeout(() => {
     playMagicalArpeggio();
   }, 1000);
