@@ -727,17 +727,25 @@ document.addEventListener('DOMContentLoaded', () => {
   let petals = [];
 
   function createPetal(randomY = false) {
+    const shades = [
+      { highlight: '#ff758f', body: '#c9184a', base: '#590d22', rim: 'rgba(255, 205, 225, 0.55)' },
+      { highlight: '#ff4d6d', body: '#a4133c', base: '#49111c', rim: 'rgba(255, 190, 210, 0.5)' },
+      { highlight: '#ff8fa3', body: '#d90429', base: '#540b1e', rim: 'rgba(255, 220, 235, 0.55)' },
+      { highlight: '#e63946', body: '#8b0000', base: '#3d0000', rim: 'rgba(255, 180, 200, 0.45)' }
+    ];
     return {
       x: Math.random() * (petalsCanvas ? petalsCanvas.width : 500),
-      y: randomY ? Math.random() * (petalsCanvas ? petalsCanvas.height : 500) : -30,
-      size: Math.random() * 14 + 10,
-      speedY: Math.random() * 1.2 + 0.8,
+      y: randomY ? Math.random() * (petalsCanvas ? petalsCanvas.height : 500) : -40,
+      size: Math.random() * 12 + 16,
+      speedY: Math.random() * 1.1 + 0.75,
       speedX: Math.random() * 0.8 - 0.4,
       rot: Math.random() * Math.PI * 2,
-      rotSpeed: (Math.random() - 0.5) * 0.03,
+      rotSpeed: (Math.random() - 0.5) * 0.022,
+      tilt: Math.random() * Math.PI * 2,
+      tiltSpeed: Math.random() * 0.03 + 0.012,
       swing: Math.random() * Math.PI * 2,
-      swingSpeed: Math.random() * 0.03 + 0.01,
-      color: Math.random() > 0.3 ? 'rgba(255, 117, 140, ' : 'rgba(255, 179, 193, '
+      swingSpeed: Math.random() * 0.025 + 0.01,
+      shade: shades[Math.floor(Math.random() * shades.length)]
     };
   }
 
@@ -746,7 +754,7 @@ document.addEventListener('DOMContentLoaded', () => {
     petalsCanvas.width = window.innerWidth;
     petalsCanvas.height = window.innerHeight;
     petals = [];
-    const count = window.innerWidth > 768 ? 24 : 14;
+    const count = window.innerWidth > 768 ? 26 : 15;
     for (let i = 0; i < count; i++) {
       petals.push(createPetal(true));
     }
@@ -759,10 +767,11 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let p of petals) {
       p.y += p.speedY;
       p.swing += p.swingSpeed;
-      p.x += Math.sin(p.swing) * 0.6 + p.speedX;
+      p.tilt += p.tiltSpeed;
+      p.x += Math.sin(p.swing) * 0.75 + p.speedX;
       p.rot += p.rotSpeed;
 
-      if (p.y > petalsCanvas.height + 40) {
+      if (p.y > petalsCanvas.height + 45) {
         Object.assign(p, createPetal(false));
       }
 
@@ -770,12 +779,45 @@ document.addEventListener('DOMContentLoaded', () => {
       petalsCtx.translate(p.x, p.y);
       petalsCtx.rotate(p.rot);
 
+      // 3D tumbling flip effect
+      const cosTilt = Math.cos(p.tilt);
+      petalsCtx.scale(1, Math.abs(cosTilt) < 0.12 ? 0.12 : cosTilt);
+
+      const w = p.size * 0.72;
+      const h = p.size;
+
+      // Realistic organic curved rose petal with tapered base and soft indented top lobe
       petalsCtx.beginPath();
-      petalsCtx.ellipse(0, 0, p.size * 0.5, p.size, 0, 0, Math.PI * 2);
-      petalsCtx.fillStyle = `${p.color}0.75)`;
-      petalsCtx.shadowBlur = 6;
-      petalsCtx.shadowColor = 'rgba(255, 117, 140, 0.4)';
+      petalsCtx.moveTo(0, h * 0.45);
+      petalsCtx.bezierCurveTo(-w * 0.65, h * 0.3, -w * 0.78, -h * 0.1, -w * 0.55, -h * 0.38);
+      petalsCtx.bezierCurveTo(-w * 0.38, -h * 0.58, -w * 0.1, -h * 0.52, 0, -h * 0.42);
+      petalsCtx.bezierCurveTo(w * 0.1, -h * 0.52, w * 0.38, -h * 0.58, w * 0.55, -h * 0.38);
+      petalsCtx.bezierCurveTo(w * 0.78, -h * 0.1, w * 0.65, h * 0.3, 0, h * 0.45);
+      petalsCtx.closePath();
+
+      // Rich velvet gradient
+      const grad = petalsCtx.createRadialGradient(-w * 0.15, -h * 0.2, p.size * 0.08, 0, 0, p.size * 0.85);
+      grad.addColorStop(0, p.shade.highlight);
+      grad.addColorStop(0.35, p.shade.body);
+      grad.addColorStop(1, p.shade.base);
+
+      petalsCtx.fillStyle = grad;
+      petalsCtx.shadowColor = 'rgba(40, 4, 12, 0.45)';
+      petalsCtx.shadowBlur = 5;
       petalsCtx.fill();
+
+      // Delicate translucent curled edge rim
+      petalsCtx.lineWidth = 0.8;
+      petalsCtx.strokeStyle = p.shade.rim;
+      petalsCtx.stroke();
+
+      // Subtle central vein
+      petalsCtx.beginPath();
+      petalsCtx.moveTo(0, h * 0.35);
+      petalsCtx.quadraticCurveTo(w * 0.05, 0, 0, -h * 0.28);
+      petalsCtx.strokeStyle = 'rgba(255, 230, 240, 0.2)';
+      petalsCtx.lineWidth = 0.75;
+      petalsCtx.stroke();
 
       petalsCtx.restore();
     }
