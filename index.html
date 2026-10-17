@@ -14,6 +14,38 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="loading-state">
+  <!-- ============================================================ -->
+  <!-- IMMERSIVE LOADING SCREEN (PRELOADER) -->
+  <!-- ============================================================ -->
+  <div class="preloader-overlay" id="preloader-overlay" role="progressbar" aria-live="polite">
+    <div class="preloader-content">
+      <!-- Pulsing Glowing Heart & Flower Icon -->
+      <div class="preloader-icon-wrapper">
+        <div class="preloader-pulse-ring"></div>
+        <div class="preloader-pulse-ring delay"></div>
+        <span class="preloader-heart">💖</span>
+        <span class="preloader-rose">🌹</span>
+      </div>
+
+      <!-- Heading & Romantic Tagline -->
+      <h1 class="preloader-title">20/10 Tri Ân Người Phụ Nữ</h1>
+      <p class="preloader-status" id="preloader-status-text">Đang chuẩn bị điều bất ngờ ngọt ngào nhất... ✨</p>
+
+      <!-- Semantic Progress Bar with Modern Styling -->
+      <div class="preloader-progress-wrap">
+        <progress class="preloader-progress" id="preloader-progress" value="0" max="100" aria-label="Tiến trình tải trang"></progress>
+        <div class="preloader-percent" id="preloader-percent">0%</div>
+      </div>
+
+      <!-- Action Button (Reveals when loading hits 100%) -->
+      <button class="preloader-enter-btn" id="btn-enter-story" style="display: none;">
+        <span>✨</span> Chạm Để Mở Món Quà <span>💐</span>
+      </button>
+
+      <div class="preloader-subtext">Dành tặng những người phụ nữ tuyệt vời nhất cuộc đời ❤️</div>
+    </div>
+  </div>
+
   <!-- Background Atmospheric Canvases -->
   <canvas id="ambient-canvas"></canvas>
   <canvas id="petals-canvas"></canvas>

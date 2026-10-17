@@ -1056,7 +1056,116 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ============================================================
-  // 14. INITIALIZATION
+  // 14. IMMERSIVE LOADING SCREEN (PRELOADER CONTROLLER)
+  // ============================================================
+  const preloaderOverlay = document.getElementById('preloader-overlay');
+  const preloaderProgress = document.getElementById('preloader-progress');
+  const preloaderPercent = document.getElementById('preloader-percent');
+  const preloaderStatus = document.getElementById('preloader-status-text');
+  const btnEnterStory = document.getElementById('btn-enter-story');
+
+  const assetsToPreload = [
+    'assets/music.mp3',
+    'assets/photo-couple.jpg',
+    'assets/photo-girl.jpg',
+    'assets/photo-mother.jpg',
+    'assets/photo-flowers.jpg',
+    'assets/mem-1.jpg',
+    'assets/mem-2.jpg',
+    'assets/mem-3.jpg',
+    'assets/mem-4.jpg',
+    'assets/mem-5.jpg',
+    'assets/mem-6.jpg',
+    'assets/mem-7.jpg',
+    'assets/mem-8.jpg'
+  ];
+
+  let loadedCount = 0;
+  const totalAssets = assetsToPreload.length;
+  let targetProgress = 15;
+  let currentDisplayProgress = 0;
+  let isPreloaderComplete = false;
+
+  function onAssetLoaded() {
+    loadedCount++;
+    targetProgress = Math.max(targetProgress, Math.min(100, Math.round((loadedCount / totalAssets) * 100)));
+  }
+
+  assetsToPreload.forEach(src => {
+    if (src.endsWith('.mp3')) {
+      const audio = new Audio();
+      audio.preload = 'auto';
+      audio.addEventListener('canplaythrough', onAssetLoaded, { once: true });
+      audio.addEventListener('error', onAssetLoaded, { once: true });
+      audio.src = src;
+      setTimeout(onAssetLoaded, 2000);
+    } else {
+      const img = new Image();
+      img.onload = onAssetLoaded;
+      img.onerror = onAssetLoaded;
+      img.src = src;
+    }
+  });
+
+  const progressTimer = setInterval(() => {
+    if (currentDisplayProgress < targetProgress) {
+      currentDisplayProgress++;
+      if (preloaderProgress) preloaderProgress.value = currentDisplayProgress;
+      if (preloaderPercent) preloaderPercent.textContent = `${currentDisplayProgress}%`;
+
+      if (currentDisplayProgress >= 35 && currentDisplayProgress < 75) {
+        if (preloaderStatus) preloaderStatus.textContent = 'Đang kết nối những giai điệu và đóa hoa... 🌸';
+      } else if (currentDisplayProgress >= 75 && currentDisplayProgress < 100) {
+        if (preloaderStatus) preloaderStatus.textContent = 'Món quà 20/10 sắp hé mở... ✨';
+      }
+    }
+
+    if (currentDisplayProgress >= 100 && !isPreloaderComplete) {
+      isPreloaderComplete = true;
+      clearInterval(progressTimer);
+      if (preloaderProgress) preloaderProgress.value = 100;
+      if (preloaderPercent) preloaderPercent.textContent = '100%';
+      if (preloaderStatus) preloaderStatus.textContent = 'Món quà 20/10 đã sẵn sàng! 🎁';
+      if (btnEnterStory) {
+        btnEnterStory.style.display = 'inline-flex';
+        btnEnterStory.focus();
+      }
+      if (preloaderOverlay) {
+        preloaderOverlay.style.cursor = 'pointer';
+        preloaderOverlay.addEventListener('click', enterExperience);
+      }
+    }
+  }, 22);
+
+  setTimeout(() => {
+    targetProgress = 100;
+  }, 2000);
+
+  function enterExperience() {
+    if (!preloaderOverlay || preloaderOverlay.classList.contains('fade-out')) return;
+    preloaderOverlay.classList.add('fade-out');
+    document.body.classList.remove('loading-state');
+
+    initAudioContext();
+    if (bgAudio.paused) {
+      toggleMusic();
+    }
+    playMagicalArpeggio();
+
+    setTimeout(() => {
+      preloaderOverlay.style.display = 'none';
+    }, 850);
+  }
+
+  if (btnEnterStory) {
+    btnEnterStory.addEventListener('click', (e) => {
+      e.stopPropagation();
+      enterExperience();
+    });
+  }
+
+  // ============================================================
+  // 15. INITIALIZATION
   // ============================================================
   build3DSphere();
   animate3DSphere();
@@ -1073,8 +1182,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial Scene
   switchScene('bloom', false);
-
-  setTimeout(() => {
-    playMagicalArpeggio();
-  }, 1000);
 });
