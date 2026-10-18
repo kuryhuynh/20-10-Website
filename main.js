@@ -27,7 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
     audioUnlocked: false,
     bloomClicks: 0,
     bloomCompleted: false,
-    bloomTargetClicks: 5
+    bloomTargetClicks: 5,
+    transitioningToHeart: false
   };
 
   // URL Query Parameters Override
@@ -144,6 +145,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Audio Controls
   const bgAudio = document.getElementById('bg-audio');
+  if (bgAudio) {
+    bgAudio.volume = 0.25; // Softer, gentle background music volume
+  }
   const musicBtn = document.getElementById('music-btn');
   const musicDisc = document.getElementById('music-disc');
   const musicStatus = document.getElementById('music-status');
@@ -283,11 +287,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetBloomState() {
     state.bloomClicks = 0;
     state.bloomCompleted = false;
+    state.transitioningToHeart = false;
     if (bloomWrapper) bloomWrapper.classList.remove('blooming');
     if (bloomingFlower) {
-      bloomingFlower.classList.remove('click-pop');
+      bloomingFlower.classList.remove('click-pop', 'warping-out');
       bloomingFlower.style.removeProperty('--rose-scale');
       bloomingFlower.style.removeProperty('--pop-rot');
+      bloomingFlower.style.removeProperty('transform');
+      bloomingFlower.style.removeProperty('opacity');
     }
     bloomHeartDots.forEach(dot => {
       dot.textContent = '🤍';
@@ -296,6 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (bloomCountNum) bloomCountNum.textContent = '0/5';
     if (bloomCueText) {
       bloomCueText.textContent = promptSteps[0];
+      bloomCueText.classList.remove('pulse-ready');
       bloomCueText.style.removeProperty('color');
     }
   }
@@ -332,32 +340,60 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => ripple.remove(), 700);
   }
 
-  function triggerBloomAndTransition() {
+  // Phase 1: Blooming after 5 clicks (waits for 1 more click to transition!)
+  function triggerBloomOnly() {
     if (state.bloomCompleted) return;
     state.bloomCompleted = true;
 
     if (bloomWrapper) bloomWrapper.classList.add('blooming');
     if (bloomCueText) {
-      bloomCueText.textContent = 'Đóa hoa đã bừng nở rực rỡ! 🌹✨';
-      bloomCueText.style.color = '#ffccd5';
+      bloomCueText.textContent = '✨ Đóa hoa đã nở! Chạm thêm 1 lần nữa để mở Trái Tim 3D 💖';
+      bloomCueText.classList.add('pulse-ready');
     }
 
     playMagicalArpeggio();
     triggerFireworksEffect();
 
-    // Start or synchronize background music
+    // Start or synchronize background music into blooming chorus
     if (bgAudio.paused) {
       toggleMusic();
     }
-    // Set to 4.5s where "CHỜ CHÚT THÔI, RỒI ANH SẼ TÌM TỚI" begins
     bgAudio.currentTime = 4.5;
+  }
 
-    // After 2.4s of admiring the blooming rose & rose wall, transition to Scene 2
+  // Phase 2: Click again after bloom -> Warp & transition to 3D Heart
+  function transitionTo3DHeart() {
+    if (state.transitioningToHeart) return;
+    state.transitioningToHeart = true;
+
+    if (bloomCueText) {
+      bloomCueText.textContent = 'Đang mở Trái Tim 3D... ✨';
+    }
+
+    playChime(1046.50, 'sine', 0.35);
+    playMagicalArpeggio();
+    triggerFireworksEffect();
+
+    if (bloomingFlower) {
+      bloomingFlower.classList.add('warping-out');
+    }
+
     setTimeout(() => {
-      if (!state.userManualSceneOverride && state.activeScene === 'bloom') {
+      if (!state.userManualSceneOverride) {
         switchScene('sphere', false);
       }
-    }, 2400);
+      if (bgAudio) {
+        bgAudio.currentTime = 11.0;
+        if (bgAudio.paused) {
+          bgAudio.play().catch(e => console.warn(e));
+        }
+      }
+      if (bloomingFlower) {
+        bloomingFlower.classList.remove('warping-out');
+        bloomingFlower.style.removeProperty('transform');
+        bloomingFlower.style.removeProperty('opacity');
+      }
+    }, 450);
   }
 
   function handleBloomClick(e) {
@@ -372,7 +408,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     spawnClickParticles(clientX, clientY);
 
-    if (state.bloomCompleted) return;
+    // If flower has already bloomed, this extra click transitions to Trái Tim 3D!
+    if (state.bloomCompleted) {
+      transitionTo3DHeart();
+      return;
+    }
 
     state.bloomClicks++;
     initAudioContext();
@@ -408,13 +448,13 @@ document.addEventListener('DOMContentLoaded', () => {
       bloomCountNum.textContent = `${Math.min(state.bloomClicks, 5)}/5`;
     }
 
-    if (bloomCueText && state.bloomClicks <= 5) {
+    if (bloomCueText && state.bloomClicks < 5) {
       bloomCueText.textContent = promptSteps[state.bloomClicks];
     }
 
-    // Trigger grand blooming when 5 clicks are completed
+    // When 5 clicks are reached, trigger blooming (waits for extra click to transition)
     if (state.bloomClicks >= 5) {
-      triggerBloomAndTransition();
+      triggerBloomOnly();
     }
   }
 
@@ -451,11 +491,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (!state.userManualSceneOverride) {
-        // Guard: While in Scene 1 and the rose has not bloomed via spam clicks,
-        // do not let the timeline prematurely jump to Scene 2.
-        if (state.activeScene === 'bloom' && !state.bloomCompleted) {
-          if (curTime >= 4.4) {
+        // Guard: While in Scene 1, do not let the timeline automatically switch to sphere
+        // until the user has explicitly clicked to transition to Trái Tim 3D!
+        if (state.activeScene === 'bloom' && !state.transitioningToHeart) {
+          if (!state.bloomCompleted && curTime >= 4.4) {
             bgAudio.currentTime = 0; // Gently loop the guitar intro
+          } else if (state.bloomCompleted && curTime >= 10.8) {
+            bgAudio.currentTime = 4.5; // Loop the blooming chorus while waiting for user click
           }
           return;
         }
@@ -533,10 +575,9 @@ document.addEventListener('DOMContentLoaded', () => {
       card.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) rotateY(${rotY.toFixed(1)}deg) rotateX(${rotX.toFixed(1)}deg)`;
 
       card.innerHTML = `
-        <span class="name-badge-icon">${person.icon}</span>
         <div class="name-badge-info">
           <span class="name-badge-title">${person.name}</span>
-          <span class="name-badge-sub">20/10 Rạng Rỡ ✨</span>
+          <span class="name-badge-sub">20/10 Rạng Rỡ</span>
         </div>
       `;
 
@@ -546,7 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const clientX = e.clientX || window.innerWidth / 2;
         const clientY = e.clientY || window.innerHeight / 2;
         spawnClickParticles(clientX, clientY);
-        showToast(`💐 ${person.wish}`);
+        showToast(person.wish);
       });
 
       orbitContainer.appendChild(card);
@@ -563,7 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const clientY = e.clientY || window.innerHeight / 2;
         spawnClickParticles(clientX, clientY);
         triggerFireworksEffect();
-        showToast('💖 Trái tim 3D chúc 18 đóa hoa 20/10 luôn xinh đẹp, hạnh phúc & rạng ngời! 🌹✨');
+        showToast('Trái tim 3D chúc 18 đóa hoa 20/10 luôn xinh đẹp, hạnh phúc và rạng ngời!');
       });
     }
   }
@@ -816,10 +857,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function toggleMusic() {
     initAudioContext();
     if (bgAudio.paused) {
+      bgAudio.volume = 0.25;
       bgAudio.play().then(() => {
         state.isPlayingMusic = true;
         if (musicDisc) musicDisc.classList.add('playing');
-        if (musicStatus) musicStatus.textContent = 'Đang phát nhạc 🎶';
+        if (musicStatus) musicStatus.textContent = 'Đang phát nhạc';
         showToast('Đang phát: "Chờ chút thôi, rồi anh sẽ tìm tới"');
       }).catch(err => {
         console.warn('Audio play restricted:', err);
