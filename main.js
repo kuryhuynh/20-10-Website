@@ -185,11 +185,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Scene 4: Frame & Heart Puzzle
   const displaySender = document.getElementById('display-sender');
   const displayRecipient = document.getElementById('display-recipient');
+  const puzzleSvg = document.getElementById('puzzle-svg');
+  const puzzleSlotsGroup = document.getElementById('puzzle-slots-group');
   const puzzleGroup = document.getElementById('puzzle-group');
   const puzzleImgElem = document.getElementById('puzzle-image-elem');
+  const puzzleProgressText = document.getElementById('puzzle-progress-text');
   const bubbleTooltip = document.getElementById('piece-compliment');
   const bubbleText = document.getElementById('bubble-text');
   const btnReorderPuzzle = document.getElementById('btn-reorder-puzzle');
+  const btnAutoSolvePuzzle = document.getElementById('btn-auto-solve-puzzle');
   const btnChangePhoto = document.getElementById('btn-change-photo');
   const specialDay20 = document.getElementById('special-day-20');
   const btnMainCelebrate = document.getElementById('btn-main-celebrate');
@@ -468,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const curTrack = state.playlist[state.currentTrackIndex];
       if (curTrack && curTrack.type === 'local' && bgAudio) {
-        bgAudio.currentTime = 11.0;
+        bgAudio.currentTime = 12.2;
         if (bgAudio.paused) {
           bgAudio.play().catch(e => console.warn(e));
         }
@@ -552,14 +556,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // 5. TIMELINE & SYNCHRONIZED LYRICS
   // ============================================================
   const lyricsTimeline = [
-    { start: 0.0, end: 4.5, text: "CHỜ ANH CHÚT...", scene: 'bloom' },
-    { start: 4.5, end: 11.0, text: "CHỜ CHÚT THÔI, RỒI ANH SẼ TÌM TỚI", scene: 'bloom', bloomTrigger: true },
-    { start: 11.0, end: 16.5, text: "ĐÃ PHIỀN", scene: 'sphere' },
-    { start: 16.5, end: 22.5, text: "CÓ ANH Ở ĐÂY RỒI!!", scene: 'sphere' },
-    { start: 22.5, end: 28.5, text: "Cầm tay anh, dựa vai anh", scene: 'sphere' },
-    { start: 28.5, end: 36.0, text: "Ngàn ánh sao vụt qua nhẹ ôm lấy em", scene: 'card' },
-    { start: 36.0, end: 43.5, text: "Nguyện mãi bên cạnh nhau yêu say đắm như ngày đầu", scene: 'card' },
-    { start: 43.5, end: 999.0, text: "CHÚC MỪNG NGÀY PHỤ NỮ VIỆT NAM 20/10 💖", scene: 'frame' }
+    { start: 0.0, end: 4.5, text: "Chờ anh chút thôi, khi mùa đông vừa sang", scene: 'bloom' },
+    { start: 4.5, end: 8.5, text: "Xếp lại hết ngổn ngang", scene: 'bloom', bloomTrigger: true },
+    { start: 8.5, end: 12.5, text: "Chờ chút thôi, rồi anh sẽ tìm tới", scene: 'bloom' },
+    { start: 12.5, end: 16.5, text: "Chờ anh chút thôi, đã phiền em phải đợi", scene: 'sphere' },
+    { start: 16.5, end: 19.5, text: "Có anh ở đây rồi", scene: 'sphere' },
+    { start: 19.5, end: 24.5, text: "Thật gần em thôi, dù xa cách phương trời", scene: 'sphere' },
+    { start: 24.5, end: 29.5, text: "Cầm tay anh, dựa vai anh", scene: 'card' },
+    { start: 29.5, end: 35.5, text: "Ngàn ánh sao vụt qua nhẹ ôm lấy em", scene: 'card' },
+    { start: 35.5, end: 42.5, text: "Nguyện mãi bên cạnh nhau, say đắm như ngày đầu", scene: 'card' },
+    { start: 42.5, end: 999.0, text: "Chúc Mừng Ngày Phụ Nữ Việt Nam 20/10 💖", scene: 'frame' }
   ];
 
   bgAudio.addEventListener('timeupdate', () => {
@@ -585,7 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.activeScene === 'bloom' && !state.transitioningToHeart) {
           if (!state.bloomCompleted && curTime >= 4.4) {
             bgAudio.currentTime = 0; // Gently loop the guitar intro
-          } else if (state.bloomCompleted && curTime >= 10.8) {
+          } else if (state.bloomCompleted && curTime >= 12.2) {
             bgAudio.currentTime = 4.5; // Loop the blooming chorus while waiting for user click
           }
           return;
@@ -1099,8 +1105,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================
-  // 8. SCENE 4: SVG JIGSAW PUZZLE (Heart Shape)
+  // 8. SCENE 4: INTERACTIVE SVG JIGSAW PUZZLE (Heart Shape)
   // ============================================================
+  function getSVGPoint(svgElem, clientX, clientY) {
+    if (!svgElem) return { x: clientX, y: clientY };
+    const pt = svgElem.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    try {
+      const ctm = svgElem.getScreenCTM();
+      if (ctm) {
+        return pt.matrixTransform(ctm.inverse());
+      }
+    } catch (_) {}
+    return { x: clientX, y: clientY };
+  }
+
   function buildJigsawEdge(x1, y1, x2, y2, dir) {
     if (dir === 0) {
       return ` L ${x2.toFixed(1)} ${y2.toFixed(1)}`;
@@ -1129,6 +1149,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function generateHeartPuzzle() {
     if (!puzzleGroup) return;
     puzzleGroup.innerHTML = '';
+    if (puzzleSlotsGroup) puzzleSlotsGroup.innerHTML = '';
 
     const cols = 6;
     const rows = 6;
@@ -1183,36 +1204,258 @@ document.addEventListener('DOMContentLoaded', () => {
         d += buildJigsawEdge(x0, y1, x0, y0, leftDir);
         d += ' Z';
 
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', d);
-        path.setAttribute('class', 'puzzle-piece');
-        path.setAttribute('fill', 'url(#puzzle-img-pattern)');
-        path.setAttribute('stroke', '#f6d365');
-        path.setAttribute('stroke-width', '1.2');
-        path.setAttribute('data-id', pieceIndex);
+        const pIdx = pieceIndex;
+        const complimentText = compliments[pIdx % compliments.length];
 
-        const complimentText = compliments[pieceIndex % compliments.length];
-        path.setAttribute('data-compliment', complimentText);
+        // 1. Build Target Guide Slot (Dashed Frame Outline)
+        if (puzzleSlotsGroup) {
+          const slot = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          slot.setAttribute('d', d);
+          slot.setAttribute('class', 'puzzle-slot');
+          slot.setAttribute('id', `puzzle-slot-${pIdx}`);
+          puzzleSlotsGroup.appendChild(slot);
+        }
 
-        const cx = (x0 + x1) / 2;
-        const cy = (y0 + y1) / 2;
-        path.setAttribute('data-cx', cx);
-        path.setAttribute('data-cy', cy);
+        // 2. Build Draggable Puzzle Piece
+        const piece = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        piece.setAttribute('d', d);
+        piece.setAttribute('class', 'puzzle-piece placed-success');
+        piece.setAttribute('fill', 'url(#puzzle-img-pattern)');
+        piece.setAttribute('stroke', '#f6d365');
+        piece.setAttribute('stroke-width', '1.2');
+        piece.setAttribute('data-id', pIdx);
+        piece.setAttribute('data-row', r);
+        piece.setAttribute('data-col', c);
+        piece.setAttribute('data-compliment', complimentText);
+        piece.setAttribute('data-current-x', '0');
+        piece.setAttribute('data-current-y', '0');
+        piece.setAttribute('data-placed', 'true');
 
-        // Click / touch interaction
-        path.addEventListener('click', (e) => {
-          e.stopPropagation();
-          handlePieceClick(path, complimentText);
+        // Pointer Drag & Drop Handlers (Modern Web Guidance drag compliant)
+        let isDragging = false;
+        let startPtrX = 0, startPtrY = 0;
+        let startPieceX = 0, startPieceY = 0;
+        let hasMoved = false;
+
+        piece.addEventListener('pointerdown', (e) => {
+          if (e.button !== 0) return;
+          isDragging = true;
+          hasMoved = false;
+          piece.setPointerCapture(e.pointerId);
+
+          const pt = getSVGPoint(puzzleSvg, e.clientX, e.clientY);
+          startPtrX = pt.x;
+          startPtrY = pt.y;
+          startPieceX = parseFloat(piece.getAttribute('data-current-x')) || 0;
+          startPieceY = parseFloat(piece.getAttribute('data-current-y')) || 0;
+
+          // Lift piece to top of SVG render tree
+          puzzleGroup.appendChild(piece);
+          piece.classList.add('is-dragging');
+
+          const slot = document.getElementById(`puzzle-slot-${pIdx}`);
+          if (slot) slot.classList.add('highlight-target');
         });
 
-        puzzleGroup.appendChild(path);
+        piece.addEventListener('pointermove', (e) => {
+          if (!isDragging || !piece.hasPointerCapture(e.pointerId)) return;
+
+          const pt = getSVGPoint(puzzleSvg, e.clientX, e.clientY);
+          const dx = pt.x - startPtrX;
+          const dy = pt.y - startPtrY;
+
+          if (Math.hypot(dx, dy) > 4) {
+            hasMoved = true;
+          }
+
+          const newX = startPieceX + dx;
+          const newY = startPieceY + dy;
+          piece.setAttribute('data-current-x', newX);
+          piece.setAttribute('data-current-y', newY);
+
+          // Proximity test to target slot (0, 0)
+          const dist = Math.hypot(newX, newY);
+          const slot = document.getElementById(`puzzle-slot-${pIdx}`);
+
+          if (dist < 38) {
+            piece.classList.add('snap-ready');
+            if (slot) slot.classList.add('in-range');
+          } else {
+            piece.classList.remove('snap-ready');
+            if (slot) slot.classList.remove('in-range');
+          }
+
+          piece.setAttribute('transform', `translate(${newX.toFixed(1)}, ${newY.toFixed(1)})`);
+        });
+
+        const onPointerEnd = (e) => {
+          if (!isDragging) return;
+          isDragging = false;
+          piece.classList.remove('is-dragging', 'snap-ready');
+
+          const slot = document.getElementById(`puzzle-slot-${pIdx}`);
+          if (slot) slot.classList.remove('highlight-target', 'in-range');
+
+          const curX = parseFloat(piece.getAttribute('data-current-x')) || 0;
+          const curY = parseFloat(piece.getAttribute('data-current-y')) || 0;
+          const dist = Math.hypot(curX, curY);
+
+          if (!hasMoved) {
+            // Tap / Click on piece
+            if (piece.getAttribute('data-placed') === 'false') {
+              snapPieceToSlot(piece, true);
+            } else {
+              handlePieceClick(piece, complimentText);
+            }
+            return;
+          }
+
+          // If dropped close to target frame slot (< 38px)
+          if (dist < 38) {
+            snapPieceToSlot(piece, true);
+          } else {
+            piece.setAttribute('data-placed', 'false');
+            updatePuzzleProgress();
+          }
+        };
+
+        piece.addEventListener('pointerup', onPointerEnd);
+        piece.addEventListener('pointercancel', onPointerEnd);
+        piece.addEventListener('lostpointercapture', onPointerEnd);
+
+        puzzleGroup.appendChild(piece);
         pieceIndex++;
+      }
+    }
+
+    updatePuzzleProgress();
+  }
+
+  function snapPieceToSlot(piece, triggerFx = true) {
+    if (!piece) return;
+    piece.style.transition = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    piece.setAttribute('transform', 'translate(0, 0)');
+    piece.setAttribute('data-current-x', '0');
+    piece.setAttribute('data-current-y', '0');
+    piece.setAttribute('data-placed', 'true');
+    piece.classList.add('placed-success');
+
+    setTimeout(() => {
+      piece.style.removeProperty('transition');
+    }, 380);
+
+    if (triggerFx) {
+      const pIdx = parseInt(piece.getAttribute('data-id'), 10) || 0;
+      const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50];
+      playChime(notes[pIdx % notes.length], 'sine', 0.28);
+
+      const compliment = piece.getAttribute('data-compliment');
+      if (compliment) {
+        handlePieceClick(piece, compliment);
+      }
+      checkPuzzleCompletion();
+    }
+  }
+
+  function updatePuzzleProgress() {
+    const pieces = document.querySelectorAll('.puzzle-piece');
+    const total = pieces.length;
+    let placed = 0;
+    pieces.forEach(p => {
+      if (p.getAttribute('data-placed') === 'true') placed++;
+    });
+
+    if (puzzleProgressText) {
+      if (placed === total) {
+        puzzleProgressText.textContent = `💖 Hoàn thành 100%! Trái tim vẹn tròn (${total}/${total} mảnh)`;
+      } else {
+        puzzleProgressText.textContent = `🧩 Đã ghép: ${placed} / ${total} mảnh (Kéo từng khối vào ô khung mẫu)`;
       }
     }
   }
 
+  function checkPuzzleCompletion() {
+    updatePuzzleProgress();
+    const pieces = document.querySelectorAll('.puzzle-piece');
+    const total = pieces.length;
+    let placed = 0;
+    pieces.forEach(p => {
+      if (p.getAttribute('data-placed') === 'true') placed++;
+    });
+
+    if (placed === total && total > 0) {
+      state.isScattered = false;
+      playMagicalArpeggio();
+      triggerFireworksEffect();
+      showToast('🎉 Tuyệt vời! Bạn đã ghép thành công bức tranh trái tim 20/10 yêu thương! 💖');
+      if (btnReorderPuzzle) {
+        btnReorderPuzzle.textContent = 'Xáo Trộn Lại';
+      }
+    }
+  }
+
+  function scatterPuzzlePieces() {
+    state.isScattered = true;
+    const pieces = document.querySelectorAll('.puzzle-piece');
+
+    pieces.forEach((piece) => {
+      const r = parseInt(piece.getAttribute('data-row'), 10) || 0;
+      const c = parseInt(piece.getAttribute('data-col'), 10) || 0;
+
+      let dx = 0;
+      let dy = (r - 2.5) * 55 + (Math.random() - 0.5) * 25;
+
+      if (c < 3) {
+        // Scatter towards left side
+        dx = -75 - Math.random() * 45;
+      } else {
+        // Scatter towards right side
+        dx = 75 + Math.random() * 45;
+      }
+
+      const rot = (Math.random() - 0.5) * 24;
+
+      piece.style.transition = 'transform 0.65s cubic-bezier(0.2, 0.9, 0.3, 1.2)';
+      piece.setAttribute('transform', `translate(${dx.toFixed(1)}, ${dy.toFixed(1)}) rotate(${rot.toFixed(1)})`);
+      piece.setAttribute('data-current-x', dx);
+      piece.setAttribute('data-current-y', dy);
+      piece.setAttribute('data-placed', 'false');
+
+      setTimeout(() => {
+        piece.style.removeProperty('transition');
+      }, 700);
+    });
+
+    playChime(392, 'sawtooth', 0.25);
+    showToast('Đã xáo trộn các khối! Hãy kéo từng mảnh vào ô khung mẫu 💖');
+    updatePuzzleProgress();
+
+    if (btnReorderPuzzle) {
+      btnReorderPuzzle.textContent = 'Xáo Trộn Lại';
+    }
+  }
+
+  function autoSolvePuzzle() {
+    const pieces = document.querySelectorAll('.puzzle-piece');
+    pieces.forEach((piece, idx) => {
+      setTimeout(() => {
+        snapPieceToSlot(piece, idx === pieces.length - 1);
+      }, idx * 45);
+    });
+    playMagicalArpeggio();
+    showToast('Đang tự động xếp các mảnh ghép vào khung mẫu... ✨');
+  }
+
+  function togglePuzzleScatter() {
+    if (state.isScattered) {
+      autoSolvePuzzle();
+    } else {
+      scatterPuzzlePieces();
+    }
+  }
+
   function handlePieceClick(path, complimentText) {
-    playChime(587.33, 'triangle', 0.4);
+    playChime(587.33, 'triangle', 0.35);
     path.classList.add('pulse-piece');
     setTimeout(() => path.classList.remove('pulse-piece'), 600);
 
@@ -1220,38 +1463,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (bubbleTooltip) {
       bubbleTooltip.classList.add('visible');
       setTimeout(() => bubbleTooltip.classList.remove('visible'), 3600);
-    }
-  }
-
-  function togglePuzzleScatter() {
-    state.isScattered = !state.isScattered;
-    const pieces = document.querySelectorAll('.puzzle-piece');
-
-    pieces.forEach((piece, idx) => {
-      if (state.isScattered) {
-        const randX = (Math.random() - 0.5) * 160;
-        const randY = (Math.random() - 0.5) * 140;
-        const randRot = (Math.random() - 0.5) * 70;
-        piece.style.transform = `translate(${randX.toFixed(1)}px, ${randY.toFixed(1)}px) rotate(${randRot.toFixed(1)}deg)`;
-        piece.style.opacity = '0.85';
-      } else {
-        piece.style.transform = 'translate(0px, 0px) rotate(0deg)';
-        piece.style.opacity = '1';
-      }
-    });
-
-    if (btnReorderPuzzle) {
-      btnReorderPuzzle.innerHTML = state.isScattered ?
-        '<span class="icon">✨</span> Ghép Lại' :
-        '<span class="icon">🧩</span> Xáo Trộn';
-    }
-
-    if (state.isScattered) {
-      playChime(440, 'sawtooth', 0.3);
-      showToast('Đã xáo trộn các mảnh ghép!');
-    } else {
-      playMagicalArpeggio();
-      showToast('Đã ghép lại trái tim hoàn chỉnh!');
     }
   }
 
@@ -2012,6 +2223,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================
   if (musicBtn) musicBtn.addEventListener('click', toggleMusic);
   if (btnReorderPuzzle) btnReorderPuzzle.addEventListener('click', togglePuzzleScatter);
+  if (btnAutoSolvePuzzle) btnAutoSolvePuzzle.addEventListener('click', autoSolvePuzzle);
   if (btnChangePhoto) btnChangePhoto.addEventListener('click', openPhotoDialog);
   if (btnCustomNames) btnCustomNames.addEventListener('click', openNamesDialog);
   if (btnShareLink) btnShareLink.addEventListener('click', copyShareLink);

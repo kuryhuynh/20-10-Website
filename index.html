@@ -217,15 +217,6 @@
       <div class="stage">
         <!-- Golden Glowing Frame (Khung Thiệp Tri Ân) -->
         <article class="frame" id="greeting-frame">
-          
-          <!-- Frame Header: Couple / Recipient Name -->
-          <header class="frame-header">
-            <div class="couple-title" id="couple-title-wrap" title="Nhấn đúp để chỉnh sửa tên nhanh">
-              <span class="script-name sender-name" id="display-sender">Anh</span>
-              <span class="pulsing-heart" aria-hidden="true">❤️</span>
-              <span class="script-name recipient-name" id="display-recipient">Em</span>
-            </div>
-          </header>
 
           <!-- Frame Body: Split Left (Puzzle Heart) & Right (Calendar) -->
           <div class="frame-body">
@@ -233,7 +224,7 @@
             <!-- Left: Heart-Shaped Jigsaw Puzzle -->
             <section class="puzzle-section" aria-label="Trái tim ghép hình kỷ niệm">
               <div class="puzzle-wrapper" id="puzzle-wrapper">
-                <svg class="puzzle-svg" id="puzzle-svg" viewBox="0 0 400 360" xmlns="http://www.w3.org/2000/svg">
+                <svg class="puzzle-svg" id="puzzle-svg" viewBox="-30 -15 460 380" xmlns="http://www.w3.org/2000/svg">
                   <defs>
                     <pattern id="puzzle-img-pattern" patternUnits="userSpaceOnUse" width="400" height="360">
                       <image id="puzzle-image-elem" href="assets/photo-couple.jpg" x="20" y="10" width="360" height="320" preserveAspectRatio="xMidYMid slice"/>
@@ -246,6 +237,9 @@
                   </defs>
                   <!-- Soft Radial Glow Behind Heart -->
                   <ellipse cx="196" cy="168" rx="150" ry="130" fill="url(#heart-glow-bg)"/>
+                  <!-- Puzzle Target Slots (Dashed frame outlines for each block) -->
+                  <g class="puzzle-slots-group" id="puzzle-slots-group"></g>
+                  <!-- Draggable Puzzle Pieces -->
                   <g class="puzzle-group" id="puzzle-group"></g>
                 </svg>
 
@@ -256,12 +250,20 @@
                 </div>
               </div>
 
+              <!-- Puzzle Status & Hint Bar -->
+              <div class="puzzle-status-bar" id="puzzle-status-bar">
+                <span class="puzzle-progress-text" id="puzzle-progress-text">🧩 Kéo từng mảnh ghép vào đúng ô khung mẫu</span>
+              </div>
+
               <!-- Puzzle Controls Under Heart -->
               <div class="puzzle-actions">
-                <button class="action-pill-btn" id="btn-reorder-puzzle">
-                  Ghép Hình
+                <button class="action-pill-btn" id="btn-reorder-puzzle" title="Xáo trộn các mảnh ghép để chơi kéo xếp hình">
+                  Xáo Trộn
                 </button>
-                <button class="action-pill-btn" id="btn-change-photo">
+                <button class="action-pill-btn" id="btn-auto-solve-puzzle" title="Tự động xếp toàn bộ mảnh ghép về đúng khung">
+                  Tự Ghép Lại
+                </button>
+                <button class="action-pill-btn" id="btn-change-photo" title="Tải ảnh riêng của bạn lên">
                   Đổi Ảnh
                 </button>
               </div>
@@ -481,13 +483,6 @@
             </svg>
           </div>
         </article>
-
-        <!-- Bottom Action Button -->
-        <div class="bottom-action-banner">
-          <button class="celebrate-btn" id="btn-main-celebrate" aria-haspopup="dialog">
-            <span>Nhấn Vào Đây Để Mở Quà & Lời Chúc 20/10</span>
-          </button>
-        </div>
       </div>
     </section>
 
@@ -499,7 +494,7 @@
   <footer class="lyrics-subtitle-bar" id="lyrics-bar" aria-live="polite">
     <div class="lyrics-container">
       <span class="lyrics-quote-open">“</span>
-      <span class="lyrics-text" id="lyrics-text">CHỜ ANH CHÚT...</span>
+      <span class="lyrics-text" id="lyrics-text">Chờ anh chút thôi, khi mùa đông vừa sang</span>
       <span class="lyrics-quote-close">”</span>
     </div>
   </footer>
