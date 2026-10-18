@@ -187,6 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnAutoSolvePuzzle = document.getElementById('btn-auto-solve-puzzle');
   const btnChangePhoto = document.getElementById('btn-change-photo');
   const specialDay20 = document.getElementById('special-day-20');
+  const specialDayTag = document.getElementById('special-day-tag');
   const btnMainCelebrate = document.getElementById('btn-main-celebrate');
   const coupleTitleWrap = document.getElementById('couple-title-wrap');
 
@@ -1073,8 +1074,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // 7. SCENE 3: CUTE CARD SETUP
   // ============================================================
   function setupCuteCard() {
-    if (cuteCardTitle) cuteCardTitle.textContent = `Gửi ${state.recipient} !`;
-    if (cuteCardSignature) cuteCardSignature.textContent = `${state.sender} ❤️`;
+    if (cuteCardTitle) {
+      if (!state.recipient || state.recipient === 'Em') {
+        cuteCardTitle.textContent = 'Gửi Chị Em Phụ Nữ !';
+      } else {
+        cuteCardTitle.textContent = `Gửi ${state.recipient} !`;
+      }
+    }
+    if (cuteCardSignature) cuteCardSignature.textContent = `${state.sender}`;
 
     if (backdropPhotosGrid) {
       backdropPhotosGrid.innerHTML = '';
@@ -1562,6 +1569,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (lyricsText && curTrack) {
       if (curTrack.id !== 'local-tiktok') {
         lyricsText.textContent = `Giai điệu: ${curTrack.title} - ${curTrack.artist} 💖`;
+      } else {
+        const curTime = bgAudio ? bgAudio.currentTime : 0;
+        const currentItem = lyricsTimeline.find(item => curTime >= item.start && curTime < item.end) || lyricsTimeline[0];
+        lyricsText.textContent = currentItem.text;
       }
     }
     if (musicStatus) {
@@ -2318,16 +2329,47 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnShareLink) btnShareLink.addEventListener('click', copyShareLink);
   if (btnMainCelebrate) btnMainCelebrate.addEventListener('click', openWishesDialog);
 
+  let isSpecialDayRevealed = false;
+  function revealSpecialDayMessage() {
+    isSpecialDayRevealed = true;
+    if (specialDayTag) {
+      specialDayTag.classList.remove('mystery-hidden');
+      specialDayTag.classList.add('revealed');
+      specialDayTag.textContent = 'NGÀY ĐẶC BIỆT CHO CHỊ EM PHỤ NỮ';
+      specialDayTag.title = '20/10 - Ngày Phụ Nữ Việt Nam';
+    }
+    if (specialDay20) {
+      specialDay20.classList.remove('celebrating');
+      void specialDay20.offsetWidth;
+      specialDay20.classList.add('celebrating');
+    }
+    triggerFireworksEffect();
+    playMagicalArpeggio();
+    showToast('✨ Ngày Đặc Biệt Cho Chị Em Phụ Nữ 20/10 ✨');
+  }
+
   if (specialDay20) {
-    specialDay20.addEventListener('click', () => {
-      triggerFireworksEffect();
-      setTimeout(openWishesDialog, 600);
+    specialDay20.addEventListener('click', (e) => {
+      e.preventDefault();
+      revealSpecialDayMessage();
     });
     specialDay20.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        triggerFireworksEffect();
-        setTimeout(openWishesDialog, 600);
+        revealSpecialDayMessage();
+      }
+    });
+  }
+
+  if (specialDayTag) {
+    specialDayTag.addEventListener('click', (e) => {
+      e.preventDefault();
+      revealSpecialDayMessage();
+    });
+    specialDayTag.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        revealSpecialDayMessage();
       }
     });
   }
