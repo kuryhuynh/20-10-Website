@@ -28,8 +28,64 @@ document.addEventListener('DOMContentLoaded', () => {
     bloomClicks: 0,
     bloomCompleted: false,
     bloomTargetClicks: 5,
-    transitioningToHeart: false
+    transitioningToHeart: false,
+    playlist: [],
+    currentTrackIndex: 0,
+    autoPlayNext: localStorage.getItem('womenDay_autoPlayNext') !== 'false',
+    repeatMode: localStorage.getItem('womenDay_repeatMode') || 'all',
+    shuffle: localStorage.getItem('womenDay_shuffle') === 'true'
   };
+
+  const defaultPlaylist = [
+    {
+      id: 'local-tiktok',
+      title: 'Chờ Chút Thôi, Rồi Anh Sẽ Tìm Tới',
+      artist: 'Acoustic 20/10 (TikTok Video Mẫu)',
+      type: 'local',
+      src: 'assets/music.mp3',
+      thumbnail: 'assets/photo-flowers.jpg',
+      tag: 'Nhạc Gốc'
+    },
+    {
+      id: 'QxXYWMIQAcQ',
+      title: 'Để Dành Cho Em',
+      artist: 'Dangrangto (Visualizer)',
+      type: 'youtube',
+      ytId: 'QxXYWMIQAcQ',
+      thumbnail: 'https://i.ytimg.com/vi/QxXYWMIQAcQ/hqdefault.jpg',
+      tag: 'Dangrangto'
+    },
+    {
+      id: 'A_GjXILBkp0',
+      title: 'EmmE (Em, Tôi)',
+      artist: 'Đạt G x Du Uyên',
+      type: 'youtube',
+      ytId: 'A_GjXILBkp0',
+      thumbnail: 'https://i.ytimg.com/vi/A_GjXILBkp0/hqdefault.jpg',
+      tag: 'Đạt G x Du Uyên'
+    },
+    {
+      id: 'Ztrj8UIDMQY',
+      title: 'Bánh Mì Không',
+      artist: 'Đạt G x Du Uyên',
+      type: 'youtube',
+      ytId: 'Ztrj8UIDMQY',
+      thumbnail: 'https://i.ytimg.com/vi/Ztrj8UIDMQY/hqdefault.jpg',
+      tag: 'Đạt G x Du Uyên'
+    }
+  ];
+
+  try {
+    const savedCustom = JSON.parse(localStorage.getItem('womenDay_customPlaylist') || '[]');
+    state.playlist = [...defaultPlaylist, ...savedCustom];
+  } catch (_) {
+    state.playlist = [...defaultPlaylist];
+  }
+
+  const savedTrackIndex = parseInt(localStorage.getItem('womenDay_trackIndex'), 10);
+  if (!isNaN(savedTrackIndex) && savedTrackIndex >= 0 && savedTrackIndex < state.playlist.length) {
+    state.currentTrackIndex = savedTrackIndex;
+  }
 
   // URL Query Parameters Override
   const urlParams = new URLSearchParams(window.location.search);
@@ -115,10 +171,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const bloomCountNum = document.getElementById('bloom-count-num');
   const bloomCueText = document.getElementById('bloom-cue-text');
 
-  // Scene 2: 3D Sphere
+  // Scene 2: 3D Heart & Falling Names
   const sphereViewport = document.getElementById('sphere-viewport');
-  const world3d = document.getElementById('world-3d');
-  const orbitContainer = document.getElementById('orbit-container');
+  const heart3dCanvas = document.getElementById('heart-3d-canvas');
+  const fallingNamesContainer = document.getElementById('falling-names-container');
 
   // Scene 3: Cute Card
   const backdropPhotosGrid = document.getElementById('backdrop-photos-grid');
@@ -143,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const lyricsBar = document.getElementById('lyrics-bar');
   const lyricsText = document.getElementById('lyrics-text');
 
-  // Audio Controls
+  // Audio Controls & Music Player
   const bgAudio = document.getElementById('bg-audio');
   if (bgAudio) {
     bgAudio.volume = 0.25; // Softer, gentle background music volume
@@ -151,6 +207,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const musicBtn = document.getElementById('music-btn');
   const musicDisc = document.getElementById('music-disc');
   const musicStatus = document.getElementById('music-status');
+  const musicTitle = document.getElementById('music-title');
+  const playerMetaBtn = document.getElementById('player-meta-btn');
+  const btnPrevTrack = document.getElementById('btn-prev-track');
+  const btnPlayPauseTrack = document.getElementById('btn-play-pause-track');
+  const btnNextTrack = document.getElementById('btn-next-track');
+  const btnOpenPlaylist = document.getElementById('btn-open-playlist');
+  const iconPlay = document.getElementById('icon-play');
+  const iconPause = document.getElementById('icon-pause');
+
+  const btnMusicPlaylistTop = document.getElementById('btn-music-playlist');
+  const musicDialog = document.getElementById('music-dialog');
+  const btnCloseMusicDialog = document.getElementById('btn-close-music-dialog');
+  const chkAutoplayNext = document.getElementById('chk-autoplay-next');
+  const btnToggleRepeat = document.getElementById('btn-toggle-repeat');
+  const repeatModeText = document.getElementById('repeat-mode-text');
+  const btnToggleShuffle = document.getElementById('btn-toggle-shuffle');
+  const shuffleModeText = document.getElementById('shuffle-mode-text');
+  const musicPlaylistList = document.getElementById('music-playlist-list');
+  const customMusicForm = document.getElementById('custom-music-form');
+  const customMusicUrl = document.getElementById('custom-music-url');
+  const ytPlayerDock = document.getElementById('yt-player-dock');
 
   // Modals & Forms
   const wishesDialog = document.getElementById('wishes-dialog');
@@ -245,7 +322,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sceneName === 'bloom') {
       // Bloom state
     } else if (sceneName === 'sphere') {
-      // 3D sphere viewport active
+      resize3DHeartCanvas();
+      if (!scene2LoopRunning) {
+        scene2LoopRunning = true;
+        requestAnimationFrame(renderScene2Loop);
+      }
     } else if (sceneName === 'frame') {
       // Frame active
     }
@@ -354,11 +435,14 @@ document.addEventListener('DOMContentLoaded', () => {
     playMagicalArpeggio();
     triggerFireworksEffect();
 
-    // Start or synchronize background music into blooming chorus
-    if (bgAudio.paused) {
-      toggleMusic();
+    // Start or synchronize background music into blooming chorus if on original track
+    const activeTrack = state.playlist[state.currentTrackIndex];
+    if (activeTrack && activeTrack.type === 'local') {
+      if (bgAudio.paused) {
+        playTrack(state.currentTrackIndex, true);
+      }
+      bgAudio.currentTime = 4.5;
     }
-    bgAudio.currentTime = 4.5;
   }
 
   // Phase 2: Click again after bloom -> Warp & transition to 3D Heart
@@ -382,7 +466,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!state.userManualSceneOverride) {
         switchScene('sphere', false);
       }
-      if (bgAudio) {
+      const curTrack = state.playlist[state.currentTrackIndex];
+      if (curTrack && curTrack.type === 'local' && bgAudio) {
         bgAudio.currentTime = 11.0;
         if (bgAudio.paused) {
           bgAudio.play().catch(e => console.warn(e));
@@ -491,6 +576,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (!state.userManualSceneOverride) {
+        const activeTrack = state.playlist[state.currentTrackIndex];
+        if (activeTrack && activeTrack.type !== 'local') {
+          return;
+        }
         // Guard: While in Scene 1, do not let the timeline automatically switch to sphere
         // until the user has explicitly clicked to transition to Trái Tim 3D!
         if (state.activeScene === 'bloom' && !state.transitioningToHeart) {
@@ -552,114 +641,439 @@ document.addEventListener('DOMContentLoaded', () => {
     { name: "Nguyễn Bùi Gia Linh", icon: "💕", wish: "Chúc Gia Linh luôn đáng yêu, hạnh phúc và gặp nhiều điều tuyệt vời nhất! 💕" }
   ];
 
-  function build3DSphere() {
-    if (!orbitContainer) return;
-    orbitContainer.innerHTML = '';
+  // ------------------------------------------------------------
+  // PART A: 3D Big Heart Assembled from Hundreds of Mini Hearts
+  // ------------------------------------------------------------
+  let heartCtx = null;
+  let heartParticles = [];
+  let haloMiniHearts = [];
+  let heartSprites = [];
 
-    const total = honoraryWomenList.length; // 18 nodes
-    const sphereRadius = window.innerWidth > 768 ? 280 : 205;
+  // Pre-render glowing mini heart sprites for 60fps performance
+  function createMiniHeartSprite(fillColor, glowColor) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
 
-    honoraryWomenList.forEach((person, i) => {
-      const phi = Math.acos(1 - 2 * (i + 0.5) / total);
-      const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = fillColor;
 
-      const x = sphereRadius * Math.sin(phi) * Math.cos(theta);
-      const y = sphereRadius * Math.cos(phi);
-      const z = sphereRadius * Math.sin(phi) * Math.sin(theta);
+    ctx.save();
+    ctx.translate(32, 28);
+    ctx.scale(1.2, 1.2);
+    ctx.beginPath();
+    ctx.moveTo(0, -4);
+    ctx.bezierCurveTo(-3, -12, -14, -12, -14, -3);
+    ctx.bezierCurveTo(-14, 5, -5, 11, 0, 16);
+    ctx.bezierCurveTo(5, 11, 14, 5, 14, -3);
+    ctx.bezierCurveTo(14, -12, 3, -12, 0, -4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
 
-      const rotY = (Math.atan2(x, z) * 180 / Math.PI);
-      const rotX = (-Math.asin(y / sphereRadius) * 180 / Math.PI);
+    return canvas;
+  }
 
+  function initHeartSprites() {
+    heartSprites = [
+      createMiniHeartSprite('#ff0055', '#ff4081'), // Ruby Vivid
+      createMiniHeartSprite('#ff477e', '#ff758c'), // Rose Pink
+      createMiniHeartSprite('#ffd700', '#f6d365'), // Champagne Gold
+      createMiniHeartSprite('#ffffff', '#ffccd5'), // Diamond White
+      createMiniHeartSprite('#e0115f', '#ff1744')  // Velvet Crimson
+    ];
+  }
+
+  function generate3DHeartParticles() {
+    const list = [];
+    const zSlices = 18;
+
+    // 1. Surface outline cross-sections (forming the 3D heart shell)
+    for (let s = 0; s < zSlices; s++) {
+      const zNorm = -1 + (2 * s) / (zSlices - 1); // -1 to 1
+      const z = zNorm * 11;
+      const radiusProfile = Math.sqrt(Math.max(0, 1 - zNorm * zNorm));
+      const pointsInSlice = Math.round(18 * radiusProfile) + 4;
+
+      for (let j = 0; j < pointsInSlice; j++) {
+        const t = (Math.PI * 2 * j) / pointsInSlice;
+        // 2D heart parametric formula
+        const hx = 16 * Math.pow(Math.sin(t), 3);
+        const hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+
+        list.push({
+          x: hx * radiusProfile,
+          y: hy * radiusProfile,
+          z: z,
+          baseSize: Math.random() * 8 + 14,
+          spriteIdx: Math.floor(Math.random() * heartSprites.length),
+          driftPhase: Math.random() * Math.PI * 2,
+          driftSpeed: Math.random() * 0.03 + 0.02
+        });
+      }
+    }
+
+    // 2. Interior volumetric points (fill heart interior with sparkling mini-hearts)
+    const interiorTarget = 440;
+    while (list.length < interiorTarget) {
+      const t = Math.random() * Math.PI * 2;
+      const r = Math.pow(Math.random(), 0.55);
+      const zNorm = (-1 + Math.random() * 2) * 0.85;
+      const radiusProfile = Math.sqrt(Math.max(0, 1 - zNorm * zNorm)) * r;
+
+      const hx = 16 * Math.pow(Math.sin(t), 3) * radiusProfile;
+      const hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * radiusProfile;
+      const z = zNorm * 10;
+
+      list.push({
+        x: hx,
+        y: hy,
+        z: z,
+        baseSize: Math.random() * 6 + 11,
+        spriteIdx: Math.floor(Math.random() * heartSprites.length),
+        driftPhase: Math.random() * Math.PI * 2,
+        driftSpeed: Math.random() * 0.03 + 0.02
+      });
+    }
+
+    // 3. Orbiting halo stardust mini-hearts (ring orbiting around the heart)
+    const halo = [];
+    const haloCount = 45;
+    for (let h = 0; h < haloCount; h++) {
+      const angle = (Math.PI * 2 * h) / haloCount;
+      const dist = 24 + Math.random() * 6;
+      halo.push({
+        angle: angle,
+        dist: dist,
+        baseSize: Math.random() * 5 + 8,
+        speed: 0.015 + Math.random() * 0.01,
+        spriteIdx: Math.random() > 0.5 ? 2 : 1 // gold or rose
+      });
+    }
+
+    heartParticles = list;
+    haloMiniHearts = halo;
+  }
+
+  // ------------------------------------------------------------
+  // PART B: Continuous Falling Names System (18 Women)
+  // ------------------------------------------------------------
+  let fallingItems = [];
+
+  function buildFallingNames() {
+    if (!fallingNamesContainer || !sphereViewport) return;
+    fallingNamesContainer.innerHTML = '';
+
+    const vHeight = sphereViewport.clientHeight || window.innerHeight || 800;
+    const totalSpan = vHeight + 160;
+    const count = honoraryWomenList.length;
+    const stepY = totalSpan / count;
+
+    fallingItems = honoraryWomenList.map((person, idx) => {
       const card = document.createElement('div');
-      card.className = 'name-card-3d';
-      card.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) rotateY(${rotY.toFixed(1)}deg) rotateX(${rotX.toFixed(1)}deg)`;
-
+      card.className = 'falling-name-card';
       card.innerHTML = `
-        <div class="name-badge-info">
-          <span class="name-badge-title">${person.name}</span>
-          <span class="name-badge-sub">20/10 Rạng Rỡ</span>
+        <div class="falling-name-pill">
+          <span class="falling-name-title">${person.name}</span>
+          <span class="falling-name-sub">20/10 Rạng Rỡ</span>
         </div>
       `;
 
+      fallingNamesContainer.appendChild(card);
+
+      const item = {
+        el: card,
+        person: person,
+        idx: idx,
+        y: -70 + idx * stepY,
+        x: 0,
+        speed: 0.92, // Uniform velocity guarantees spacing remains identical forever
+        swayTime: idx * 0.73,
+        swaySpeed: 0.016,
+        swayAmp: 12,
+        isHovered: false
+      };
+
+      card.addEventListener('mouseenter', () => { item.isHovered = true; });
+      card.addEventListener('mouseleave', () => { item.isHovered = false; });
+      card.addEventListener('touchstart', () => { item.isHovered = true; }, { passive: true });
+      card.addEventListener('touchend', () => {
+        setTimeout(() => { item.isHovered = false; }, 900);
+      });
+
       card.addEventListener('click', (e) => {
         e.stopPropagation();
-        playMagicalArpeggio();
-        const clientX = e.clientX || window.innerWidth / 2;
-        const clientY = e.clientY || window.innerHeight / 2;
+        playChime(880, 'sine', 0.4);
+        const rect = card.getBoundingClientRect();
+        const clientX = rect.left + rect.width / 2;
+        const clientY = rect.top + rect.height / 2;
         spawnClickParticles(clientX, clientY);
         showToast(person.wish);
       });
 
-      orbitContainer.appendChild(card);
+      return item;
     });
+  }
 
-    // 3D Rotating Heart interaction
-    const heart3dWrapper = document.getElementById('heart-3d-wrapper');
-    if (heart3dWrapper && !heart3dWrapper.dataset.bound) {
-      heart3dWrapper.dataset.bound = 'true';
-      heart3dWrapper.addEventListener('click', (e) => {
-        e.stopPropagation();
+  function resize3DHeartCanvas() {
+    if (!heart3dCanvas || !sphereViewport) return;
+    const rect = sphereViewport.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = rect.width || sphereViewport.clientWidth || window.innerWidth || 800;
+    const h = rect.height || sphereViewport.clientHeight || (window.innerHeight - 120) || 600;
+    heart3dCanvas.width = Math.round(w * dpr);
+    heart3dCanvas.height = Math.round(h * dpr);
+    if (heartCtx) {
+      heartCtx.setTransform(1, 0, 0, 1, 0, 0);
+      heartCtx.scale(dpr, dpr);
+    }
+  }
+
+  // Interaction & Rotation variables
+  let isDraggingSphere = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let curRotX = -10;
+  let curRotY = 0;
+  let targetRotX = -10;
+  let targetRotY = 0;
+  let animTime = 0;
+  let scene2LoopRunning = false;
+
+  function init3DHeartScene() {
+    if (!heart3dCanvas) return;
+    heartCtx = heart3dCanvas.getContext('2d');
+    initHeartSprites();
+    generate3DHeartParticles();
+    resize3DHeartCanvas();
+    buildFallingNames();
+
+    // Canvas click to trigger celebratory burst
+    if (!heart3dCanvas.dataset.bound) {
+      heart3dCanvas.dataset.bound = 'true';
+      heart3dCanvas.addEventListener('click', (e) => {
+        if (Math.abs(e.clientX - dragStartX) > 8 || Math.abs(e.clientY - dragStartY) > 8) return;
         playMagicalArpeggio();
-        const clientX = e.clientX || window.innerWidth / 2;
-        const clientY = e.clientY || window.innerHeight / 2;
-        spawnClickParticles(clientX, clientY);
+        spawnClickParticles(e.clientX, e.clientY);
         triggerFireworksEffect();
         showToast('Trái tim 3D chúc 18 đóa hoa 20/10 luôn xinh đẹp, hạnh phúc và rạng ngời!');
       });
     }
+
+    if (sphereViewport && !sphereViewport.dataset.dragBound) {
+      sphereViewport.dataset.dragBound = 'true';
+      sphereViewport.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('.falling-name-card') || e.target.closest('.sphere-drag-hint')) return;
+        isDraggingSphere = true;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        try { sphereViewport.setPointerCapture(e.pointerId); } catch (_) {}
+      });
+
+      sphereViewport.addEventListener('pointermove', (e) => {
+        if (!isDraggingSphere) return;
+        const dx = e.clientX - dragStartX;
+        const dy = e.clientY - dragStartY;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+
+        targetRotY += dx * 0.45;
+        targetRotX -= dy * 0.45;
+        targetRotX = Math.max(-65, Math.min(65, targetRotX));
+      });
+
+      const endDrag = (e) => {
+        if (isDraggingSphere) {
+          isDraggingSphere = false;
+          try { sphereViewport.releasePointerCapture(e.pointerId); } catch (_) {}
+        }
+      };
+
+      sphereViewport.addEventListener('pointerup', endDrag);
+      sphereViewport.addEventListener('pointercancel', endDrag);
+    }
+
+    if (!scene2LoopRunning) {
+      scene2LoopRunning = true;
+      requestAnimationFrame(renderScene2Loop);
+    }
   }
 
-  // 3D Sphere Drag Interaction
-  let isDraggingSphere = false;
-  let dragStartX = 0;
-  let dragStartY = 0;
-  let curRotX = -12;
-  let curRotY = 0;
-  let targetRotX = -12;
-  let targetRotY = 0;
+  function renderScene2Loop() {
+    animTime += 0.025;
 
-  if (sphereViewport) {
-    sphereViewport.addEventListener('pointerdown', (e) => {
-      isDraggingSphere = true;
-      dragStartX = e.clientX;
-      dragStartY = e.clientY;
-      sphereViewport.setPointerCapture(e.pointerId);
-    });
-
-    sphereViewport.addEventListener('pointermove', (e) => {
-      if (!isDraggingSphere) return;
-      const dx = e.clientX - dragStartX;
-      const dy = e.clientY - dragStartY;
-      dragStartX = e.clientX;
-      dragStartY = e.clientY;
-
-      targetRotY += dx * 0.45;
-      targetRotX -= dy * 0.45;
-      targetRotX = Math.max(-75, Math.min(75, targetRotX));
-    });
-
-    const endSphereDrag = (e) => {
-      if (isDraggingSphere) {
-        isDraggingSphere = false;
-        try { sphereViewport.releasePointerCapture(e.pointerId); } catch (_) {}
-      }
-    };
-
-    sphereViewport.addEventListener('pointerup', endSphereDrag);
-    sphereViewport.addEventListener('pointercancel', endSphereDrag);
-  }
-
-  function animate3DSphere() {
+    // Smooth drag inertia & continuous auto-rotation
     if (!isDraggingSphere) {
-      targetRotY += 0.22; // gentle auto-rotation
+      targetRotY += 0.28; // gentle cosmic auto spin
     }
     curRotX += (targetRotX - curRotX) * 0.08;
     curRotY += (targetRotY - curRotY) * 0.08;
 
-    if (world3d) {
-      world3d.style.transform = `rotateX(${curRotX.toFixed(2)}deg) rotateY(${curRotY.toFixed(2)}deg)`;
+    // --------------------------------------------------------
+    // 1. RENDER 3D BIG HEART COMPOSED OF MINI HEARTS
+    // --------------------------------------------------------
+    if (heartCtx && heart3dCanvas && sphereViewport) {
+      const rect = sphereViewport.getBoundingClientRect();
+      const w = rect.width || sphereViewport.clientWidth || window.innerWidth || 800;
+      const h = rect.height || sphereViewport.clientHeight || (window.innerHeight - 120) || 600;
+      heartCtx.clearRect(0, 0, w, h);
+
+      // Heartbeat pulse calculation
+      const beat = 1 + 0.07 * Math.sin(animTime * 3.4) + 0.035 * Math.sin(animTime * 6.8);
+      const heartScale = (w < 768 ? 6.2 : 8.2) * beat;
+
+      const radY = (curRotY * Math.PI) / 180;
+      const radX = (curRotX * Math.PI) / 180;
+      const cosY = Math.cos(radY), sinY = Math.sin(radY);
+      const cosX = Math.cos(radX), sinX = Math.sin(radX);
+
+      const focal = 620;
+      const cx = w / 2;
+      const cy = h / 2 - 15;
+
+      // Project all mini hearts into 3D
+      const projected = [];
+
+      heartParticles.forEach((p) => {
+        const drift = Math.sin(animTime * p.driftSpeed + p.driftPhase) * 0.6;
+        const px = (p.x + drift) * heartScale;
+        const py = (p.y + drift) * heartScale;
+        const pz = p.z * heartScale;
+
+        // Rotate Y
+        const x1 = px * cosY + pz * sinY;
+        const z1 = -px * sinY + pz * cosY;
+
+        // Rotate X
+        const y2 = py * cosX - z1 * sinX;
+        const z2 = py * sinX + z1 * cosX;
+
+        // Perspective projection
+        const persp = focal / (focal + z2);
+        const screenX = cx + x1 * persp;
+        const screenY = cy + y2 * persp;
+        const renderSize = p.baseSize * persp;
+
+        projected.push({
+          x: screenX,
+          y: screenY,
+          z: z2,
+          size: renderSize,
+          spriteIdx: p.spriteIdx,
+          alpha: Math.min(1, Math.max(0.4, 0.75 + (z2 / (20 * heartScale)) * 0.35))
+        });
+      });
+
+      // Halo mini hearts orbiting around
+      haloMiniHearts.forEach((halo) => {
+        const curAngle = halo.angle + animTime * halo.speed;
+        const hx = Math.cos(curAngle) * halo.dist * heartScale;
+        const hy = Math.sin(curAngle) * (halo.dist * 0.35) * heartScale;
+        const hz = Math.sin(curAngle) * halo.dist * heartScale * 0.85;
+
+        const x1 = hx * cosY + hz * sinY;
+        const z1 = -hx * sinY + hz * cosY;
+        const y2 = hy * cosX - z1 * sinX;
+        const z2 = hy * sinX + z1 * cosX;
+
+        const persp = focal / (focal + z2);
+        projected.push({
+          x: cx + x1 * persp,
+          y: cy + y2 * persp,
+          z: z2,
+          size: halo.baseSize * persp,
+          spriteIdx: halo.spriteIdx,
+          alpha: 0.85
+        });
+      });
+
+      // Painter's algorithm: sort by depth Z (back to front)
+      projected.sort((a, b) => a.z - b.z);
+
+      // Central radial glow aura behind the heart
+      const auraGrad = heartCtx.createRadialGradient(cx, cy, 10, cx, cy, 130 * beat);
+      auraGrad.addColorStop(0, 'rgba(255, 64, 129, 0.38)');
+      auraGrad.addColorStop(0.5, 'rgba(235, 47, 6, 0.12)');
+      auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      heartCtx.fillStyle = auraGrad;
+      heartCtx.beginPath();
+      heartCtx.arc(cx, cy, 130 * beat, 0, Math.PI * 2);
+      heartCtx.fill();
+
+      // Draw all mini hearts
+      projected.forEach((p) => {
+        const sprite = heartSprites[p.spriteIdx] || heartSprites[0];
+        heartCtx.globalAlpha = p.alpha;
+        heartCtx.drawImage(sprite, p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+      });
+      heartCtx.globalAlpha = 1;
     }
-    requestAnimationFrame(animate3DSphere);
+
+    // --------------------------------------------------------
+    // 2. ANIMATE CONTINUOUS FALLING NAMES WATERFALL
+    // --------------------------------------------------------
+    if (sphereViewport && fallingNamesContainer && fallingItems.length > 0) {
+      const vWidth = sphereViewport.clientWidth || window.innerWidth;
+      const vHeight = sphereViewport.clientHeight || window.innerHeight;
+      const totalSpan = vHeight + 160;
+
+      // Responsive balanced lane fractions across the width
+      let laneFractions;
+      let lanePattern;
+
+      if (vWidth < 540) {
+        // Mobile (3 lanes)
+        laneFractions = [0.02, 0.48, 0.95];
+        lanePattern = [0, 2, 1];
+      } else if (vWidth < 900) {
+        // Tablet (4 lanes)
+        laneFractions = [0.02, 0.32, 0.64, 0.96];
+        lanePattern = [0, 2, 3, 1];
+      } else {
+        // Desktop (6 lanes)
+        laneFractions = [0.02, 0.20, 0.39, 0.58, 0.77, 0.96];
+        lanePattern = [0, 3, 5, 1, 4, 2];
+      }
+
+      const cardEstWidth = vWidth < 540 ? 140 : 185;
+      const availWidth = Math.max(100, vWidth - cardEstWidth);
+
+      fallingItems.forEach((item) => {
+        const laneIdx = lanePattern[item.idx % lanePattern.length];
+        const baseX = 8 + laneFractions[laneIdx] * availWidth;
+
+        if (!item.isHovered) {
+          item.y += item.speed;
+          item.swayTime += item.swaySpeed;
+
+          // Seamless wrap: preserves uniform vertical intervals indefinitely
+          if (item.y > vHeight + 80) {
+            item.y -= totalSpan;
+          }
+        }
+
+        const swayX = Math.sin(item.swayTime) * item.swayAmp;
+        item.x = Math.max(4, Math.min(vWidth - (cardEstWidth - 10), baseX + swayX));
+
+        item.el.style.transform = `translate3d(${item.x.toFixed(1)}px, ${item.y.toFixed(1)}px, 0)`;
+      });
+    }
+
+    requestAnimationFrame(renderScene2Loop);
+  }
+
+  // Compatibility aliases
+  function build3DSphere() {
+    init3DHeartScene();
+  }
+
+  function animate3DSphere() {
+    if (!scene2LoopRunning) {
+      scene2LoopRunning = true;
+      requestAnimationFrame(renderScene2Loop);
+    }
   }
 
   // ============================================================
@@ -852,40 +1266,397 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================
-  // 9. AUDIO CONTROLLER & BACKGROUND MUSIC
+  // 9. HYBRID AUDIO ENGINE & PLAYLIST MANAGER (HTML5 + YouTube API)
   // ============================================================
-  function toggleMusic() {
+  let ytPlayer = null;
+  let isYtReady = false;
+  let pendingYtTrack = null;
+
+  function updatePlayerBarUI() {
+    const curTrack = state.playlist[state.currentTrackIndex] || state.playlist[0];
+    if (musicTitle && curTrack) {
+      musicTitle.textContent = `${curTrack.title} - ${curTrack.artist}`;
+    }
+    if (musicStatus) {
+      musicStatus.textContent = state.isPlayingMusic ? 'Đang phát nhạc' : 'Nhạc tạm dừng';
+    }
+    if (iconPlay && iconPause) {
+      iconPlay.style.display = state.isPlayingMusic ? 'none' : 'block';
+      iconPause.style.display = state.isPlayingMusic ? 'block' : 'none';
+    }
+    if (musicDisc) {
+      musicDisc.classList.toggle('playing', state.isPlayingMusic);
+    }
+  }
+
+  function setPlayerUIPlaying(isPlaying) {
+    state.isPlayingMusic = isPlaying;
+    updatePlayerBarUI();
+    renderPlaylist();
+  }
+
+  // YouTube IFrame API Callback
+  window.onYouTubeIframeAPIReady = function() {
+    try {
+      ytPlayer = new YT.Player('yt-player-host', {
+        height: '100%',
+        width: '100%',
+        videoId: 'QxXYWMIQAcQ',
+        playerVars: {
+          autoplay: 0,
+          controls: 1,
+          modestbranding: 1,
+          rel: 0,
+          playsinline: 1,
+          enablejsapi: 1,
+          origin: window.location.origin
+        },
+        events: {
+          onReady: () => {
+            isYtReady = true;
+            if (pendingYtTrack) {
+              const trk = pendingYtTrack;
+              pendingYtTrack = null;
+              playYouTubeTrack(trk);
+            }
+          },
+          onStateChange: (event) => {
+            if (event.data === YT.PlayerState.PLAYING) {
+              setPlayerUIPlaying(true);
+            } else if (event.data === YT.PlayerState.PAUSED) {
+              setPlayerUIPlaying(false);
+            } else if (event.data === YT.PlayerState.ENDED) {
+              handleTrackEnded();
+            }
+          },
+          onError: (err) => {
+            console.warn('YouTube playback error:', err);
+            showToast('Video YouTube tạm thời không khả dụng, đang phát nhạc nền 20/10 💖');
+            setTimeout(() => playTrack(0, true), 800);
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('YT initialization error:', e);
+    }
+  };
+
+  if (window.YT && window.YT.Player) {
+    window.onYouTubeIframeAPIReady();
+  }
+
+  function playYouTubeTrack(track) {
     initAudioContext();
-    if (bgAudio.paused) {
+    if (bgAudio && !bgAudio.paused) {
+      bgAudio.pause();
+    }
+    if (!isYtReady || !ytPlayer) {
+      pendingYtTrack = track;
+      return;
+    }
+    try {
+      ytPlayer.loadVideoById(track.ytId);
+      ytPlayer.playVideo();
+      setPlayerUIPlaying(true);
+      showToast(`Đang phát: "${track.title}" 🎶`);
+    } catch (err) {
+      console.warn('Error playing YouTube track:', err);
+    }
+  }
+
+  function playLocalTrack(track) {
+    initAudioContext();
+    if (isYtReady && ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+      try { ytPlayer.pauseVideo(); } catch (_) {}
+    }
+    if (bgAudio) {
       bgAudio.volume = 0.25;
       bgAudio.play().then(() => {
-        state.isPlayingMusic = true;
-        if (musicDisc) musicDisc.classList.add('playing');
-        if (musicStatus) musicStatus.textContent = 'Đang phát nhạc';
-        showToast('Đang phát: "Chờ chút thôi, rồi anh sẽ tìm tới"');
+        setPlayerUIPlaying(true);
+        showToast(`Đang phát: "${track.title}" 🎶`);
       }).catch(err => {
         console.warn('Audio play restricted:', err);
         showToast('Vui lòng chạm màn hình để phát nhạc!');
       });
-    } else {
-      bgAudio.pause();
-      state.isPlayingMusic = false;
-      if (musicDisc) musicDisc.classList.remove('playing');
-      if (musicStatus) musicStatus.textContent = 'Nhạc tạm dừng';
-      showToast('Đã tạm dừng bài hát');
     }
   }
+
+  function playTrack(index, autoPlay = true) {
+    if (index < 0 || index >= state.playlist.length) return;
+    state.currentTrackIndex = index;
+    localStorage.setItem('womenDay_trackIndex', index);
+
+    const track = state.playlist[index];
+    updatePlayerBarUI();
+    renderPlaylist();
+
+    if (!autoPlay) return;
+
+    if (track.type === 'local') {
+      playLocalTrack(track);
+    } else if (track.type === 'youtube') {
+      playYouTubeTrack(track);
+    }
+  }
+
+  function togglePlayPause() {
+    initAudioContext();
+    const curTrack = state.playlist[state.currentTrackIndex] || state.playlist[0];
+
+    if (state.isPlayingMusic) {
+      // Pause active source
+      if (curTrack.type === 'local' && bgAudio) {
+        bgAudio.pause();
+      } else if (curTrack.type === 'youtube' && isYtReady && ytPlayer) {
+        try { ytPlayer.pauseVideo(); } catch (_) {}
+      }
+      setPlayerUIPlaying(false);
+      showToast('Đã tạm dừng bài hát');
+    } else {
+      // Resume active source
+      if (curTrack.type === 'local' && bgAudio) {
+        bgAudio.play().then(() => {
+          setPlayerUIPlaying(true);
+          showToast(`Đang phát: "${curTrack.title}" 🎶`);
+        }).catch(err => {
+          console.warn('Playback error:', err);
+        });
+      } else if (curTrack.type === 'youtube') {
+        if (isYtReady && ytPlayer) {
+          try {
+            ytPlayer.playVideo();
+            setPlayerUIPlaying(true);
+            showToast(`Đang phát: "${curTrack.title}" 🎶`);
+          } catch (_) {
+            playYouTubeTrack(curTrack);
+          }
+        } else {
+          playYouTubeTrack(curTrack);
+        }
+      }
+    }
+  }
+
+  function toggleMusic() {
+    togglePlayPause();
+  }
+
+  function playNextTrack() {
+    if (state.playlist.length === 0) return;
+    let nextIdx = 0;
+    if (state.shuffle && state.playlist.length > 1) {
+      do {
+        nextIdx = Math.floor(Math.random() * state.playlist.length);
+      } while (nextIdx === state.currentTrackIndex);
+    } else {
+      nextIdx = (state.currentTrackIndex + 1) % state.playlist.length;
+    }
+    playTrack(nextIdx, true);
+  }
+
+  function playPrevTrack() {
+    if (state.playlist.length === 0) return;
+    let prevIdx = 0;
+    if (state.shuffle && state.playlist.length > 1) {
+      do {
+        prevIdx = Math.floor(Math.random() * state.playlist.length);
+      } while (prevIdx === state.currentTrackIndex);
+    } else {
+      prevIdx = (state.currentTrackIndex - 1 + state.playlist.length) % state.playlist.length;
+    }
+    playTrack(prevIdx, true);
+  }
+
+  function handleTrackEnded() {
+    if (state.repeatMode === 'one') {
+      const curTrack = state.playlist[state.currentTrackIndex];
+      if (curTrack.type === 'local' && bgAudio) {
+        bgAudio.currentTime = 0;
+        bgAudio.play().catch(() => {});
+      } else if (curTrack.type === 'youtube' && isYtReady && ytPlayer) {
+        ytPlayer.seekTo(0);
+        ytPlayer.playVideo();
+      }
+    } else if (state.autoPlayNext) {
+      playNextTrack();
+    } else {
+      setPlayerUIPlaying(false);
+    }
+  }
+
+  if (bgAudio) {
+    bgAudio.addEventListener('ended', handleTrackEnded);
+  }
+
+  function extractYouTubeId(url) {
+    if (!url) return null;
+    url = url.trim();
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+    const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+    if (shortMatch) return shortMatch[1];
+    const longMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+    if (longMatch) return longMatch[1];
+    const embedMatch = url.match(/embed\/([a-zA-Z0-9_-]{11})/);
+    if (embedMatch) return embedMatch[1];
+    return null;
+  }
+
+  function renderPlaylist() {
+    if (!musicPlaylistList) return;
+    musicPlaylistList.innerHTML = '';
+
+    state.playlist.forEach((track, idx) => {
+      const item = document.createElement('div');
+      const isActive = idx === state.currentTrackIndex;
+      item.className = `playlist-track-item ${isActive ? 'active' : ''} ${isActive && state.isPlayingMusic ? 'playing' : ''}`;
+      item.setAttribute('role', 'listitem');
+      item.setAttribute('data-index', idx);
+
+      item.innerHTML = `
+        <img src="${track.thumbnail}" alt="${track.title}" class="track-thumb" loading="lazy">
+        <div class="track-info">
+          <div class="track-title">${track.title}</div>
+          <div class="track-artist">${track.artist}</div>
+        </div>
+        <div class="track-wave" aria-hidden="true">
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+        </div>
+        <span class="track-badge">${track.tag || (track.type === 'youtube' ? 'YouTube' : 'Gốc')}</span>
+      `;
+
+      item.addEventListener('click', () => {
+        if (idx === state.currentTrackIndex) {
+          togglePlayPause();
+        } else {
+          playTrack(idx, true);
+        }
+      });
+
+      musicPlaylistList.appendChild(item);
+    });
+  }
+
+  function openMusicDialog() {
+    if (musicDialog) {
+      renderPlaylist();
+      if (chkAutoplayNext) chkAutoplayNext.checked = state.autoPlayNext;
+      if (repeatModeText) {
+        repeatModeText.textContent = state.repeatMode === 'one' ? 'Lặp 1 bài' : 'Lặp toàn bộ';
+      }
+      if (shuffleModeText) {
+        shuffleModeText.textContent = state.shuffle ? 'Xáo trộn: Bật' : 'Xáo trộn: Tắt';
+      }
+      musicDialog.showModal();
+    }
+  }
+
+  function closeMusicDialog() {
+    if (musicDialog) musicDialog.close();
+  }
+
+  // Playlist Form Submission (Add Custom YouTube Song)
+  if (customMusicForm) {
+    customMusicForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = customMusicUrl ? customMusicUrl.value.trim() : '';
+      const ytId = extractYouTubeId(val);
+
+      if (!ytId) {
+        showToast('Link YouTube không hợp lệ, vui lòng kiểm tra lại!');
+        return;
+      }
+
+      const newTrack = {
+        id: ytId,
+        title: `Giai điệu tặng em (${ytId.substring(0, 6)}...)`,
+        artist: 'Nhạc tuyển chọn',
+        type: 'youtube',
+        ytId: ytId,
+        thumbnail: `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`,
+        tag: 'Tự Thêm'
+      };
+
+      state.playlist.push(newTrack);
+
+      // Save custom tracks to localStorage
+      const customTracks = state.playlist.filter(t => t.tag === 'Tự Thêm');
+      localStorage.setItem('womenDay_customPlaylist', JSON.stringify(customTracks));
+
+      if (customMusicUrl) customMusicUrl.value = '';
+      showToast('Đã thêm bài hát vào danh sách phát! Đang phát ngay 💖');
+
+      renderPlaylist();
+      playTrack(state.playlist.length - 1, true);
+
+      // Fetch title in background via noembed API
+      fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${ytId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.title) {
+            newTrack.title = data.title;
+            if (data.author_name) newTrack.artist = data.author_name;
+            localStorage.setItem('womenDay_customPlaylist', JSON.stringify(state.playlist.filter(t => t.tag === 'Tự Thêm')));
+            renderPlaylist();
+            updatePlayerBarUI();
+          }
+        })
+        .catch(() => {});
+    });
+  }
+
+  // Autoplay next toggle
+  if (chkAutoplayNext) {
+    chkAutoplayNext.addEventListener('change', () => {
+      state.autoPlayNext = chkAutoplayNext.checked;
+      localStorage.setItem('womenDay_autoPlayNext', state.autoPlayNext);
+      showToast(state.autoPlayNext ? 'Đã bật: Tự động chuyển bài khi kết thúc' : 'Đã tắt: Tự động chuyển bài');
+    });
+  }
+
+  // Repeat mode toggle
+  if (btnToggleRepeat) {
+    btnToggleRepeat.addEventListener('click', () => {
+      state.repeatMode = state.repeatMode === 'all' ? 'one' : 'all';
+      localStorage.setItem('womenDay_repeatMode', state.repeatMode);
+      if (repeatModeText) {
+        repeatModeText.textContent = state.repeatMode === 'one' ? 'Lặp 1 bài' : 'Lặp toàn bộ';
+      }
+      btnToggleRepeat.classList.toggle('active', state.repeatMode === 'one');
+      showToast(state.repeatMode === 'one' ? 'Chế độ: Lặp lại 1 bài hát' : 'Chế độ: Lặp lại toàn bộ danh sách');
+    });
+  }
+
+  // Shuffle mode toggle
+  if (btnToggleShuffle) {
+    btnToggleShuffle.addEventListener('click', () => {
+      state.shuffle = !state.shuffle;
+      localStorage.setItem('womenDay_shuffle', state.shuffle);
+      if (shuffleModeText) {
+        shuffleModeText.textContent = state.shuffle ? 'Xáo trộn: Bật' : 'Xáo trộn: Tắt';
+      }
+      btnToggleShuffle.classList.toggle('active', state.shuffle);
+      showToast(state.shuffle ? 'Đã bật phát nhạc xáo trộn ngẫu nhiên' : 'Đã tắt phát nhạc ngẫu nhiên');
+    });
+  }
+
+  // Wiring Player Buttons
+  if (musicBtn) musicBtn.addEventListener('click', togglePlayPause);
+  if (btnPlayPauseTrack) btnPlayPauseTrack.addEventListener('click', togglePlayPause);
+  if (btnPrevTrack) btnPrevTrack.addEventListener('click', playPrevTrack);
+  if (btnNextTrack) btnNextTrack.addEventListener('click', playNextTrack);
+  if (btnOpenPlaylist) btnOpenPlaylist.addEventListener('click', openMusicDialog);
+  if (playerMetaBtn) playerMetaBtn.addEventListener('click', openMusicDialog);
+  if (btnMusicPlaylistTop) btnMusicPlaylistTop.addEventListener('click', openMusicDialog);
+  if (btnCloseMusicDialog) btnCloseMusicDialog.addEventListener('click', closeMusicDialog);
 
   function attemptAutoPlay() {
     if (state.audioUnlocked) return;
     state.audioUnlocked = true;
     initAudioContext();
-    if (bgAudio.paused && !state.isPlayingMusic) {
-      bgAudio.play().then(() => {
-        state.isPlayingMusic = true;
-        if (musicDisc) musicDisc.classList.add('playing');
-        if (musicStatus) musicStatus.textContent = 'Đang phát nhạc 🎶';
-      }).catch(() => {});
+    if (!state.isPlayingMusic) {
+      playTrack(state.currentTrackIndex, true);
     }
     document.removeEventListener('click', attemptAutoPlay);
     document.removeEventListener('touchstart', attemptAutoPlay);
@@ -1405,11 +2176,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initAudioContext();
     resetBloomState();
-    bgAudio.currentTime = 0;
     switchScene('bloom', false);
-    if (bgAudio.paused) {
-      toggleMusic();
-    }
+    playTrack(state.currentTrackIndex, true);
     playMagicalArpeggio();
 
     setTimeout(() => {
@@ -1439,6 +2207,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   resizePetalsCanvas();
   drawPetals();
+
+  updatePlayerBarUI();
+  renderPlaylist();
 
   // Initial Scene
   switchScene('bloom', false);

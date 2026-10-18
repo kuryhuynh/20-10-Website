@@ -55,17 +55,43 @@
     <source src="assets/music.mp3" type="audio/mpeg">
   </audio>
 
-  <!-- Floating Audio Disc Control -->
-  <aside class="audio-control" id="audio-control-bar" title="Nhấn để phát / tạm dừng bài hát">
-    <button class="music-btn" id="music-btn" aria-label="Bật hoặc tắt nhạc">
-      <div class="music-disc" id="music-disc">
-        <span class="disc-hole"></span>
-      </div>
-      <div class="music-info">
-        <span class="music-title">Chờ chút thôi, rồi anh sẽ tìm tới</span>
+  <!-- Persistent YouTube Background Player Host -->
+  <div class="yt-player-dock" id="yt-player-dock" aria-hidden="true">
+    <div id="yt-player-host"></div>
+  </div>
+
+  <!-- Floating Audio Player Bar -->
+  <aside class="audio-control" id="audio-control-bar" aria-label="Trình phát nhạc nền">
+    <div class="player-pill">
+      <button class="player-disc-btn" id="music-btn" aria-label="Bật hoặc tắt nhạc" title="Bật / Tạm dừng">
+        <div class="music-disc" id="music-disc">
+          <span class="disc-hole"></span>
+        </div>
+      </button>
+
+      <div class="player-meta" id="player-meta-btn" role="button" tabindex="0" title="Nhấn để mở Danh Sách Nhạc">
+        <div class="music-title-marquee">
+          <span class="music-title" id="music-title">Chờ chút thôi, rồi anh sẽ tìm tới</span>
+        </div>
         <span class="music-status" id="music-status">Nhấn để nghe nhạc</span>
       </div>
-    </button>
+
+      <div class="player-actions">
+        <button class="player-action-btn" id="btn-prev-track" title="Bài trước" aria-label="Bài trước">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+        <button class="player-action-btn btn-play-main" id="btn-play-pause-track" title="Phát / Tạm dừng" aria-label="Phát / Tạm dừng">
+          <svg id="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <button class="player-action-btn" id="btn-next-track" title="Bài tiếp theo" aria-label="Bài tiếp theo">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+        <button class="player-action-btn btn-open-playlist" id="btn-open-playlist" title="Danh sách bài hát 20/10" aria-label="Danh sách bài hát">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
+        </button>
+      </div>
+    </div>
   </aside>
 
   <!-- Top Navigation & Scene Switcher Toolbar -->
@@ -86,6 +112,9 @@
     </nav>
 
     <div class="quick-tools">
+      <button class="tool-pill" id="btn-music-playlist" title="Chọn và đổi bài hát nhạc nền 20/10">
+        Chọn Nhạc
+      </button>
       <button class="tool-pill" id="btn-replay-story" title="Phát lại toàn bộ câu chuyện từ đầu">
         Phát Tự Động
       </button>
@@ -139,49 +168,11 @@
     <!-- SCENE 2: 3D ROTATING MEMORY SPHERE (16s - 36s) -->
     <section class="scene-pane" id="scene-sphere" aria-label="Vũ trụ quả cầu ảnh 3D">
       <div class="sphere-viewport" id="sphere-viewport">
-        <!-- 3D Orbiting World -->
-        <div class="world-3d" id="world-3d">
-          <!-- Center 3D Rotating Glowing Heart -->
-          <div class="heart-3d-wrapper" id="heart-3d-wrapper" role="button" tabindex="0" aria-label="Trái tim 3D yêu thương - Nhấn để phát hiệu ứng phép màu">
-            <div class="heart-3d-spin">
-              <div class="heart-3d-pulse">
-                <div class="heart-slice slice-1">
-                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
-                </div>
-                <div class="heart-slice slice-2">
-                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
-                </div>
-                <div class="heart-slice slice-3">
-                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
-                </div>
-                <div class="heart-slice slice-4">
-                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
-                </div>
-                <div class="heart-slice slice-5">
-                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
-                </div>
-                <div class="heart-slice slice-6">
-                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
-                </div>
-                <div class="heart-slice slice-7">
-                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
-                </div>
-                <div class="heart-slice slice-8">
-                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
-                </div>
-                <!-- Golden Orbital Rings -->
-                <div class="heart-ring ring-1"></div>
-                <div class="heart-ring ring-2"></div>
-              </div>
-            </div>
-            <!-- Inner Glowing Core Aura -->
-            <div class="heart-core-glow"></div>
-            <div class="heart-pulse-halo"></div>
-          </div>
+        <!-- 3D Heart Canvas: Big 3D heart assembled from hundreds of glowing mini hearts -->
+        <canvas id="heart-3d-canvas" class="heart-3d-canvas" role="img" aria-label="Trái tim 3D ghép từ hàng trăm trái tim nhỏ"></canvas>
 
-          <!-- 3D Elements will be populated dynamically via JavaScript -->
-          <div class="orbit-container" id="orbit-container"></div>
-        </div>
+        <!-- Continuous Falling Names Container: 18 names gracefully falling from top to bottom -->
+        <div class="falling-names-container" id="falling-names-container" aria-label="Dòng tên rơi liên tục"></div>
 
         <!-- Hint for user interaction -->
         <div class="sphere-drag-hint">
@@ -650,9 +641,59 @@
     </div>
   </dialog>
 
+  <!-- ============================================================ -->
+  <!-- MODAL: Music Playlist & Customization Dialog (Native <dialog>) -->
+  <!-- ============================================================ -->
+  <dialog id="music-dialog" class="modern-dialog music-modal" aria-labelledby="music-dialog-title">
+    <div class="dialog-content glass-card music-dialog-card">
+      <button class="dialog-close-btn" id="btn-close-music-dialog" aria-label="Đóng bảng đổi nhạc">✕</button>
+
+      <header class="dialog-header">
+        <span class="header-pre-title">Giai Điệu Tình Yêu & Tri Ân 20/10</span>
+        <h2 id="music-dialog-title" class="dialog-heading">Danh Sách Nhạc</h2>
+        <p class="dialog-subtitle">Chọn bài hát yêu thích, bật tự động phát liên tục hoặc thêm nhạc YouTube tùy chỉnh</p>
+      </header>
+
+      <!-- Player Controls Bar inside Modal -->
+      <div class="modal-player-toolbar">
+        <label class="toggle-control" title="Khi kết thúc bài, tự động phát bài kế tiếp trong danh sách">
+          <input type="checkbox" id="chk-autoplay-next" checked>
+          <span class="toggle-slider"></span>
+          <span class="toggle-label">Tự động chuyển bài (Auto-Play)</span>
+        </label>
+
+        <div class="mode-toggles">
+          <button type="button" class="mode-btn active" id="btn-toggle-repeat" title="Chuyển chế độ lặp">
+            <span class="mode-text" id="repeat-mode-text">Lặp toàn bộ</span>
+          </button>
+          <button type="button" class="mode-btn" id="btn-toggle-shuffle" title="Bật/Tắt phát ngẫu nhiên">
+            <span class="mode-text" id="shuffle-mode-text">Xáo trộn: Tắt</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Playlist Items List -->
+      <div class="music-playlist-list" id="music-playlist-list" role="list">
+        <!-- Rendered by JavaScript -->
+      </div>
+
+      <!-- Custom Song Inserter Form -->
+      <form id="custom-music-form" class="custom-music-form">
+        <div class="custom-music-heading">Thêm Bài Hát YouTube Của Bạn:</div>
+        <div class="custom-music-input-row">
+          <input type="url" id="custom-music-url" placeholder="Dán link YouTube (Ví dụ: https://youtu.be/...)" aria-label="Liên kết video YouTube" required>
+          <button type="submit" class="btn-add-music">Thêm Bài</button>
+        </div>
+        <p class="custom-music-hint">Hỗ trợ tất cả liên kết video YouTube dạng youtu.be hoặc watch?v= để phát ngay giai điệu bạn yêu thích.</p>
+      </form>
+    </div>
+  </dialog>
+
   <!-- Toast Notification Feedback -->
   <div class="toast-message" id="toast-message" role="status" aria-live="polite"></div>
 
+  <!-- YouTube IFrame Player API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
   <!-- Main JavaScript Logic -->
   <script src="main.js"></script>
 </body>
