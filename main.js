@@ -40,38 +40,29 @@ document.addEventListener('DOMContentLoaded', () => {
     {
       id: 'local-tiktok',
       title: 'Chờ Chút Thôi, Rồi Anh Sẽ Tìm Tới',
-      artist: 'Acoustic 20/10 (TikTok Video Mẫu)',
+      artist: 'CONGB (TikTok 20/10)',
       type: 'local',
       src: 'assets/music.mp3',
       thumbnail: 'assets/photo-flowers.jpg',
       tag: 'Nhạc Gốc'
     },
     {
-      id: 'QxXYWMIQAcQ',
+      id: 'local-dedanhchoem',
       title: 'Để Dành Cho Em',
-      artist: 'Dangrangto (Visualizer)',
-      type: 'youtube',
-      ytId: 'QxXYWMIQAcQ',
-      thumbnail: 'https://i.ytimg.com/vi/QxXYWMIQAcQ/hqdefault.jpg',
+      artist: 'Dangrangto (Acoustic R&B)',
+      type: 'local',
+      src: 'assets/music-2.mp3',
+      thumbnail: 'assets/photo-girl.jpg',
       tag: 'Dangrangto'
     },
     {
-      id: 'A_GjXILBkp0',
-      title: 'EmmE (Em, Tôi)',
-      artist: 'Đạt G x Du Uyên',
-      type: 'youtube',
-      ytId: 'A_GjXILBkp0',
-      thumbnail: 'https://i.ytimg.com/vi/A_GjXILBkp0/hqdefault.jpg',
-      tag: 'Đạt G x Du Uyên'
-    },
-    {
-      id: 'Ztrj8UIDMQY',
-      title: 'Bánh Mì Không',
-      artist: 'Đạt G x Du Uyên',
-      type: 'youtube',
-      ytId: 'Ztrj8UIDMQY',
-      thumbnail: 'https://i.ytimg.com/vi/Ztrj8UIDMQY/hqdefault.jpg',
-      tag: 'Đạt G x Du Uyên'
+      id: 'local-nangtho',
+      title: 'Nàng Thơ',
+      artist: 'Hoàng Dũng (Acoustic Ballad)',
+      type: 'local',
+      src: 'assets/music-3.mp3',
+      thumbnail: 'assets/photo-mother.jpg',
+      tag: 'Hoàng Dũng'
     }
   ];
 
@@ -439,13 +430,10 @@ document.addEventListener('DOMContentLoaded', () => {
     playMagicalArpeggio();
     triggerFireworksEffect();
 
-    // Start or synchronize background music into blooming chorus if on original track
+    // If background music is paused, play seamlessly without resetting position
     const activeTrack = state.playlist[state.currentTrackIndex];
-    if (activeTrack && activeTrack.type === 'local') {
-      if (bgAudio.paused) {
-        playTrack(state.currentTrackIndex, true);
-      }
-      bgAudio.currentTime = 4.5;
+    if (activeTrack && activeTrack.type === 'local' && bgAudio && bgAudio.paused) {
+      playTrack(state.currentTrackIndex, true);
     }
   }
 
@@ -471,11 +459,8 @@ document.addEventListener('DOMContentLoaded', () => {
         switchScene('sphere', false);
       }
       const curTrack = state.playlist[state.currentTrackIndex];
-      if (curTrack && curTrack.type === 'local' && bgAudio) {
-        bgAudio.currentTime = 12.2;
-        if (bgAudio.paused) {
-          bgAudio.play().catch(e => console.warn(e));
-        }
+      if (curTrack && curTrack.type === 'local' && bgAudio && bgAudio.paused) {
+        bgAudio.play().catch(e => console.warn(e));
       }
       if (bloomingFlower) {
         bloomingFlower.classList.remove('warping-out');
@@ -556,53 +541,50 @@ document.addEventListener('DOMContentLoaded', () => {
   // 5. TIMELINE & SYNCHRONIZED LYRICS
   // ============================================================
   const lyricsTimeline = [
-    { start: 0.0, end: 4.5, text: "Chờ anh chút thôi, khi mùa đông vừa sang", scene: 'bloom' },
-    { start: 4.5, end: 8.5, text: "Xếp lại hết ngổn ngang", scene: 'bloom', bloomTrigger: true },
-    { start: 8.5, end: 12.5, text: "Chờ chút thôi, rồi anh sẽ tìm tới", scene: 'bloom' },
-    { start: 12.5, end: 16.5, text: "Chờ anh chút thôi, đã phiền em phải đợi", scene: 'sphere' },
-    { start: 16.5, end: 19.5, text: "Có anh ở đây rồi", scene: 'sphere' },
-    { start: 19.5, end: 24.5, text: "Thật gần em thôi, dù xa cách phương trời", scene: 'sphere' },
-    { start: 24.5, end: 29.5, text: "Cầm tay anh, dựa vai anh", scene: 'card' },
-    { start: 29.5, end: 35.5, text: "Ngàn ánh sao vụt qua nhẹ ôm lấy em", scene: 'card' },
-    { start: 35.5, end: 42.5, text: "Nguyện mãi bên cạnh nhau, say đắm như ngày đầu", scene: 'card' },
-    { start: 42.5, end: 999.0, text: "Chúc Mừng Ngày Phụ Nữ Việt Nam 20/10 💖", scene: 'frame' }
+    { start: 0.0, end: 3.2, text: "Chờ anh chút thôi, khi mùa đông vừa sang", scene: 'bloom' },
+    { start: 3.2, end: 7.0, text: "Xếp lại hết ngổn ngang", scene: 'bloom', bloomTrigger: true },
+    { start: 7.0, end: 10.8, text: "Chờ chút thôi, rồi anh sẽ tìm tới", scene: 'bloom' },
+    { start: 10.8, end: 14.8, text: "Chờ anh chút thôi, đã phiền em phải đợi", scene: 'sphere' },
+    { start: 14.8, end: 17.5, text: "Có anh ở đây rồi", scene: 'sphere' },
+    { start: 17.5, end: 22.0, text: "Thật gần em thôi, dù xa cách phương trời", scene: 'sphere' },
+    { start: 22.0, end: 26.8, text: "Cầm tay anh, dựa vai anh", scene: 'card' },
+    { start: 26.8, end: 32.8, text: "Ngàn ánh sao vụt qua nhẹ ôm lấy em", scene: 'card' },
+    { start: 32.8, end: 40.5, text: "Nguyện mãi bên cạnh nhau, say đắm như ngày đầu", scene: 'card' },
+    { start: 40.5, end: 999.0, text: "Chúc Mừng Ngày Phụ Nữ Việt Nam 20/10 💖", scene: 'frame' }
   ];
 
   bgAudio.addEventListener('timeupdate', () => {
-    const curTime = bgAudio.currentTime;
-    const currentItem = lyricsTimeline.find(item => curTime >= item.start && curTime < item.end);
+    const activeTrack = state.playlist[state.currentTrackIndex];
+    if (!activeTrack) return;
 
-    if (currentItem) {
-      if (lyricsText && lyricsText.textContent !== currentItem.text) {
-        lyricsText.style.opacity = '0';
-        setTimeout(() => {
+    if (activeTrack.id === 'local-tiktok') {
+      const curTime = bgAudio.currentTime;
+      const currentItem = lyricsTimeline.find(item => curTime >= item.start && curTime < item.end);
+
+      if (currentItem) {
+        if (lyricsText && lyricsText.textContent !== currentItem.text) {
           lyricsText.textContent = currentItem.text;
-          lyricsText.style.opacity = '1';
-        }, 150);
-      }
-
-      if (!state.userManualSceneOverride) {
-        const activeTrack = state.playlist[state.currentTrackIndex];
-        if (activeTrack && activeTrack.type !== 'local') {
-          return;
         }
-        // Guard: While in Scene 1, do not let the timeline automatically switch to sphere
-        // until the user has explicitly clicked to transition to Trái Tim 3D!
-        if (state.activeScene === 'bloom' && !state.transitioningToHeart) {
-          if (!state.bloomCompleted && curTime >= 4.4) {
-            bgAudio.currentTime = 0; // Gently loop the guitar intro
-          } else if (state.bloomCompleted && curTime >= 12.2) {
-            bgAudio.currentTime = 4.5; // Loop the blooming chorus while waiting for user click
+
+        if (!state.userManualSceneOverride) {
+          // Guard: While in Scene 1 (bloom), do not automatically switch scenes
+          // until the user has clicked to bloom and transition
+          if (state.activeScene === 'bloom' && !state.transitioningToHeart) {
+            return;
           }
-          return;
-        }
 
-        if (state.activeScene !== currentItem.scene) {
-          switchScene(currentItem.scene, false);
+          if (state.activeScene !== currentItem.scene) {
+            switchScene(currentItem.scene, false);
+          }
+          if (currentItem.bloomTrigger && bloomWrapper) {
+            bloomWrapper.classList.add('blooming');
+          }
         }
-        if (currentItem.bloomTrigger && bloomWrapper) {
-          bloomWrapper.classList.add('blooming');
-        }
+      }
+    } else {
+      const trackNotice = `Giai điệu: ${activeTrack.title} - ${activeTrack.artist} 💖`;
+      if (lyricsText && lyricsText.textContent !== trackNotice) {
+        lyricsText.textContent = trackNotice;
       }
     }
   });
@@ -1193,6 +1175,128 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let pieceIndex = 0;
 
+    // Global window-level drag manager for 100% uninterrupted, stutter-free dragging
+    let activePiece = null;
+    let activeSlot = null;
+    let isDragging = false;
+    let startPtrX = 0, startPtrY = 0;
+    let startPieceX = 0, startPieceY = 0;
+    let curClientX = 0, curClientY = 0;
+    let hasMoved = false;
+    let rafId = null;
+    let invCTM = null;
+
+    const onGlobalTouchMove = (e) => {
+      if (isDragging && e.cancelable) {
+        e.preventDefault();
+      }
+    };
+
+    const updatePieceDrag = () => {
+      rafId = null;
+      if (!isDragging || !activePiece) return;
+
+      const pt = puzzleSvg.createSVGPoint();
+      pt.x = curClientX;
+      pt.y = curClientY;
+      const svgPt = invCTM ? pt.matrixTransform(invCTM) : pt;
+
+      const dx = svgPt.x - startPtrX;
+      const dy = svgPt.y - startPtrY;
+
+      if (Math.hypot(dx, dy) > 3) {
+        hasMoved = true;
+      }
+
+      const newX = startPieceX + dx;
+      const newY = startPieceY + dy;
+      activePiece.setAttribute('data-current-x', newX.toFixed(1));
+      activePiece.setAttribute('data-current-y', newY.toFixed(1));
+
+      const dist = Math.hypot(newX, newY);
+
+      if (dist < 55) {
+        activePiece.classList.add('snap-ready');
+        if (activeSlot) activeSlot.classList.add('in-range');
+      } else {
+        activePiece.classList.remove('snap-ready');
+        if (activeSlot) activeSlot.classList.remove('in-range');
+      }
+
+      activePiece.setAttribute('transform', `translate(${newX.toFixed(1)}, ${newY.toFixed(1)})`);
+    };
+
+    const onGlobalPointerMove = (e) => {
+      if (!isDragging) return;
+      if (e.cancelable) e.preventDefault();
+      curClientX = e.clientX;
+      curClientY = e.clientY;
+
+      if (!rafId) {
+        rafId = requestAnimationFrame(updatePieceDrag);
+      }
+    };
+
+    const onGlobalPointerEnd = (e) => {
+      if (!isDragging || !activePiece) return;
+      isDragging = false;
+
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+
+      document.body.classList.remove('puzzle-dragging-active');
+      window.removeEventListener('pointermove', onGlobalPointerMove);
+      window.removeEventListener('pointerup', onGlobalPointerEnd);
+      window.removeEventListener('pointercancel', onGlobalPointerEnd);
+      window.removeEventListener('touchmove', onGlobalTouchMove);
+
+      const piece = activePiece;
+      const slot = activeSlot;
+      piece.classList.remove('is-dragging', 'snap-ready');
+      if (slot) slot.classList.remove('highlight-target', 'in-range');
+
+      const curX = parseFloat(piece.getAttribute('data-current-x')) || 0;
+      const curY = parseFloat(piece.getAttribute('data-current-y')) || 0;
+      const dist = Math.hypot(curX, curY);
+
+      activePiece = null;
+      activeSlot = null;
+
+      if (!hasMoved) {
+        if (piece.getAttribute('data-placed') !== 'true') {
+          if (slot) {
+            slot.classList.add('highlight-target');
+            setTimeout(() => slot.classList.remove('highlight-target'), 1500);
+          }
+          showToast('💡 Nhấn giữ và kéo mảnh ghép này lên ô viền trong trái tim nhé! 💖');
+          playChime(587.33, 'triangle', 0.25);
+        } else {
+          const compliment = piece.getAttribute('data-compliment');
+          handlePieceClick(piece, compliment);
+        }
+        return;
+      }
+
+      if (dist < 55) {
+        snapPieceToSlot(piece, true);
+      } else {
+        const tX = parseFloat(piece.getAttribute('data-tray-x')) || 0;
+        const tY = parseFloat(piece.getAttribute('data-tray-y')) || 0;
+        piece.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2)';
+        piece.setAttribute('transform', `translate(${tX.toFixed(1)}, ${tY.toFixed(1)})`);
+        piece.setAttribute('data-current-x', tX);
+        piece.setAttribute('data-current-y', tY);
+        piece.setAttribute('data-placed', 'false');
+        setTimeout(() => {
+          piece.style.removeProperty('transition');
+        }, 320);
+        playChime(349.23, 'sine', 0.15);
+        updatePuzzleProgress();
+      }
+    };
+
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const x0 = startX + c * cellW;
@@ -1260,62 +1364,17 @@ document.addEventListener('DOMContentLoaded', () => {
         piece.setAttribute('data-tray-y', trayDy.toFixed(1));
         piece.setAttribute('data-placed', 'true');
 
-        // Pointer Drag & Drop Handlers (High-performance 60fps/120fps rAF-throttled)
-        let isDragging = false;
-        let startPtrX = 0, startPtrY = 0;
-        let startPieceX = 0, startPieceY = 0;
-        let curSvgPtrX = 0, curSvgPtrY = 0;
-        let hasMoved = false;
-        let rafId = null;
-        let invCTM = null;
-        const targetSlot = document.getElementById(`puzzle-slot-${pIdx}`);
-
-        const updatePieceDrag = () => {
-          rafId = null;
-          if (!isDragging) return;
-
-          const dx = curSvgPtrX - startPtrX;
-          const dy = curSvgPtrY - startPtrY;
-
-          if (Math.hypot(dx, dy) > 3) {
-            hasMoved = true;
-          }
-
-          const newX = startPieceX + dx;
-          const newY = startPieceY + dy;
-          piece.setAttribute('data-current-x', newX.toFixed(1));
-          piece.setAttribute('data-current-y', newY.toFixed(1));
-
-          // Proximity test to heart target slot (0, 0)
-          const dist = Math.hypot(newX, newY);
-
-          if (dist < 52) {
-            piece.classList.add('snap-ready');
-            if (targetSlot) targetSlot.classList.add('in-range');
-          } else {
-            piece.classList.remove('snap-ready');
-            if (targetSlot) targetSlot.classList.remove('in-range');
-          }
-
-          // Pure translate with ZERO scale shift for 100% stable cursor tracking
-          piece.setAttribute('transform', `translate(${newX.toFixed(1)}, ${newY.toFixed(1)})`);
-        };
-
         piece.addEventListener('pointerdown', (e) => {
           if (e.button !== 0 && e.pointerType === 'mouse') return;
           if (e.cancelable) e.preventDefault();
 
+          activePiece = piece;
+          activeSlot = document.getElementById(`puzzle-slot-${pIdx}`);
           isDragging = true;
           hasMoved = false;
 
-          // CRITICAL: Immediately clear CSS transition so dragging tracks pointer with 0 latency!
           piece.style.transition = 'none';
 
-          try {
-            piece.setPointerCapture(e.pointerId);
-          } catch (_) {}
-
-          // Cache inverse CTM once at pointerdown to eliminate layout recalculations during drag
           try {
             const ctm = puzzleSvg.getScreenCTM();
             invCTM = ctm ? ctm.inverse() : null;
@@ -1330,95 +1389,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
           startPtrX = svgPt.x;
           startPtrY = svgPt.y;
-          curSvgPtrX = svgPt.x;
-          curSvgPtrY = svgPt.y;
+          curClientX = e.clientX;
+          curClientY = e.clientY;
           startPieceX = parseFloat(piece.getAttribute('data-current-x')) || 0;
           startPieceY = parseFloat(piece.getAttribute('data-current-y')) || 0;
 
-          // Lift piece to top of SVG render tree
           puzzleGroup.appendChild(piece);
           piece.classList.add('is-dragging');
 
-          if (targetSlot) targetSlot.classList.add('highlight-target');
+          if (activeSlot) activeSlot.classList.add('highlight-target');
+
+          document.body.classList.add('puzzle-dragging-active');
+          window.addEventListener('pointermove', onGlobalPointerMove, { passive: false });
+          window.addEventListener('pointerup', onGlobalPointerEnd);
+          window.addEventListener('pointercancel', onGlobalPointerEnd);
+          window.addEventListener('touchmove', onGlobalTouchMove, { passive: false });
         });
-
-        piece.addEventListener('pointermove', (e) => {
-          if (!isDragging) return;
-          if (e.cancelable) e.preventDefault();
-
-          const pt = puzzleSvg.createSVGPoint();
-          pt.x = e.clientX;
-          pt.y = e.clientY;
-          const svgPt = invCTM ? pt.matrixTransform(invCTM) : pt;
-
-          curSvgPtrX = svgPt.x;
-          curSvgPtrY = svgPt.y;
-
-          if (!rafId) {
-            rafId = requestAnimationFrame(updatePieceDrag);
-          }
-        });
-
-        const onPointerEnd = (e) => {
-          if (!isDragging) return;
-          isDragging = false;
-
-          if (rafId) {
-            cancelAnimationFrame(rafId);
-            rafId = null;
-          }
-
-          piece.classList.remove('is-dragging', 'snap-ready');
-          try {
-            if (piece.hasPointerCapture(e.pointerId)) {
-              piece.releasePointerCapture(e.pointerId);
-            }
-          } catch (_) {}
-
-          if (targetSlot) targetSlot.classList.remove('highlight-target', 'in-range');
-
-          const curX = parseFloat(piece.getAttribute('data-current-x')) || 0;
-          const curY = parseFloat(piece.getAttribute('data-current-y')) || 0;
-          const dist = Math.hypot(curX, curY);
-
-          if (!hasMoved) {
-            // Tap / Click on piece - DO NOT AUTO SNAP!
-            if (piece.getAttribute('data-placed') !== 'true') {
-              if (targetSlot) {
-                targetSlot.classList.add('highlight-target');
-                setTimeout(() => targetSlot.classList.remove('highlight-target'), 1500);
-              }
-              showToast('💡 Nhấn giữ và kéo mảnh ghép này lên ô viền trong trái tim nhé! 💖');
-              playChime(587.33, 'triangle', 0.25);
-            } else {
-              handlePieceClick(piece, complimentText);
-            }
-            return;
-          }
-
-          // If dropped close to target frame slot in heart (< 52px)
-          if (dist < 52) {
-            snapPieceToSlot(piece, true);
-          } else {
-            // Dropped outside slot -> smoothly return to piece tray spot
-            const tX = parseFloat(piece.getAttribute('data-tray-x')) || 0;
-            const tY = parseFloat(piece.getAttribute('data-tray-y')) || 0;
-            piece.style.transition = 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2)';
-            piece.setAttribute('transform', `translate(${tX.toFixed(1)}, ${tY.toFixed(1)})`);
-            piece.setAttribute('data-current-x', tX);
-            piece.setAttribute('data-current-y', tY);
-            piece.setAttribute('data-placed', 'false');
-            setTimeout(() => {
-              piece.style.removeProperty('transition');
-            }, 380);
-            playChime(349.23, 'sine', 0.15);
-            updatePuzzleProgress();
-          }
-        };
-
-        piece.addEventListener('pointerup', onPointerEnd);
-        piece.addEventListener('pointercancel', onPointerEnd);
-        piece.addEventListener('lostpointercapture', onPointerEnd);
 
         puzzleGroup.appendChild(piece);
         pieceIndex++;
@@ -1573,6 +1559,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (musicTitle && curTrack) {
       musicTitle.textContent = `${curTrack.title} - ${curTrack.artist}`;
     }
+    if (lyricsText && curTrack) {
+      if (curTrack.id !== 'local-tiktok') {
+        lyricsText.textContent = `Giai điệu: ${curTrack.title} - ${curTrack.artist} 💖`;
+      }
+    }
     if (musicStatus) {
       musicStatus.textContent = state.isPlayingMusic ? 'Đang phát nhạc' : 'Nhạc tạm dừng';
     }
@@ -1627,8 +1618,11 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           onError: (err) => {
             console.warn('YouTube playback error:', err);
-            showToast('Video YouTube tạm thời không khả dụng, đang phát nhạc nền 20/10 💖');
-            setTimeout(() => playTrack(0, true), 800);
+            const cur = state.playlist[state.currentTrackIndex];
+            if (cur && cur.type === 'youtube') {
+              showToast('Video YouTube không khả dụng, chuyển sang bài tiếp theo 🎶');
+              setTimeout(() => playNextTrack(), 1000);
+            }
           }
         }
       });
@@ -1667,6 +1661,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (bgAudio) {
       bgAudio.volume = 0.25;
+      const targetSrc = track.src;
+      const currentSrc = bgAudio.getAttribute('src') || bgAudio.src || '';
+      if (!currentSrc.includes(targetSrc)) {
+        bgAudio.src = targetSrc;
+        bgAudio.currentTime = 0;
+        bgAudio.load();
+      }
       bgAudio.play().then(() => {
         setPlayerUIPlaying(true);
         showToast(`Đang phát: "${track.title}" 🎶`);
@@ -1711,6 +1712,13 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       // Resume active source
       if (curTrack.type === 'local' && bgAudio) {
+        const targetSrc = curTrack.src;
+        const currentSrc = bgAudio.getAttribute('src') || bgAudio.src || '';
+        if (targetSrc && !currentSrc.includes(targetSrc)) {
+          bgAudio.src = targetSrc;
+          bgAudio.currentTime = 0;
+          bgAudio.load();
+        }
         bgAudio.play().then(() => {
           setPlayerUIPlaying(true);
           showToast(`Đang phát: "${curTrack.title}" 🎶`);
@@ -1997,8 +2005,6 @@ document.addEventListener('DOMContentLoaded', () => {
       ambCtx.beginPath();
       ambCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
       ambCtx.fillStyle = `rgba(${s.color}, ${a})`;
-      ambCtx.shadowBlur = 8;
-      ambCtx.shadowColor = `rgba(${s.color}, 0.8)`;
       ambCtx.fill();
     }
     requestAnimationFrame(drawAmbient);
@@ -2084,8 +2090,6 @@ document.addEventListener('DOMContentLoaded', () => {
       grad.addColorStop(1, p.shade.base);
 
       petalsCtx.fillStyle = grad;
-      petalsCtx.shadowColor = 'rgba(40, 4, 12, 0.45)';
-      petalsCtx.shadowBlur = 5;
       petalsCtx.fill();
 
       // Delicate translucent curled edge rim

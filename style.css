@@ -1391,6 +1391,14 @@ progress.preloader-progress::-moz-progress-bar {
   margin-bottom: 10px;
 }
 
+/* Lock body scrolling when dragging a puzzle piece so mobile never scrolls */
+body.puzzle-dragging-active {
+  overflow: hidden !important;
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
 /* ============================================================
    Left Section: Puzzle Heart
    ============================================================ */
@@ -1399,6 +1407,7 @@ progress.preloader-progress::-moz-progress-bar {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  touch-action: none;
 }
 
 .puzzle-wrapper {
@@ -1406,6 +1415,7 @@ progress.preloader-progress::-moz-progress-bar {
   width: 100%;
   max-width: 420px;
   filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.6));
+  touch-action: none;
 }
 
 .puzzle-svg {
@@ -1413,7 +1423,9 @@ progress.preloader-progress::-moz-progress-bar {
   height: auto;
   display: block;
   overflow: visible;
-  touch-action: none;
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
 
 /* Tray background & label */
