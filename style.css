@@ -1461,31 +1461,31 @@ progress.preloader-progress::-moz-progress-bar {
 
 .puzzle-piece {
   cursor: grab;
-  touch-action: none;
-  -webkit-user-select: none;
-  user-select: none;
+  touch-action: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
   outline: none;
-  transition: filter 0.2s ease, stroke 0.2s ease;
   transform-origin: center center;
+  will-change: transform;
 }
 
 .puzzle-piece:hover {
   stroke: #ffffff;
   stroke-width: 2px;
-  filter: drop-shadow(0 0 10px rgba(255, 215, 120, 0.9)) brightness(1.1);
+  filter: drop-shadow(0 0 8px rgba(255, 215, 120, 0.8));
 }
 
 .puzzle-piece.is-dragging {
   cursor: grabbing !important;
   stroke: #ffffff !important;
-  stroke-width: 2.6px !important;
-  filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 18px rgba(255, 105, 180, 0.85)) brightness(1.25) !important;
+  stroke-width: 2.4px !important;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.8)) !important;
 }
 
 .puzzle-piece.snap-ready {
   stroke: #2ed573 !important;
-  stroke-width: 3.2px !important;
-  filter: drop-shadow(0 0 20px rgba(46, 213, 115, 1)) brightness(1.35) !important;
+  stroke-width: 3px !important;
+  filter: drop-shadow(0 0 12px rgba(46, 213, 115, 0.95)) !important;
 }
 
 .puzzle-piece.placed-success {

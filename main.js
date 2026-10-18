@@ -908,6 +908,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderScene2Loop() {
+    if (state.activeScene !== 'sphere') {
+      scene2LoopRunning = false;
+      return;
+    }
+
     animTime += 0.025;
 
     // Smooth drag inertia & continuous auto-rotation
@@ -1255,25 +1260,78 @@ document.addEventListener('DOMContentLoaded', () => {
         piece.setAttribute('data-tray-y', trayDy.toFixed(1));
         piece.setAttribute('data-placed', 'true');
 
-        // Pointer Drag & Drop Handlers (Modern Web Guidance drag compliant)
+        // Pointer Drag & Drop Handlers (High-performance 60fps/120fps rAF-throttled)
         let isDragging = false;
         let startPtrX = 0, startPtrY = 0;
         let startPieceX = 0, startPieceY = 0;
+        let curSvgPtrX = 0, curSvgPtrY = 0;
         let hasMoved = false;
+        let rafId = null;
+        let invCTM = null;
+        const targetSlot = document.getElementById(`puzzle-slot-${pIdx}`);
+
+        const updatePieceDrag = () => {
+          rafId = null;
+          if (!isDragging) return;
+
+          const dx = curSvgPtrX - startPtrX;
+          const dy = curSvgPtrY - startPtrY;
+
+          if (Math.hypot(dx, dy) > 3) {
+            hasMoved = true;
+          }
+
+          const newX = startPieceX + dx;
+          const newY = startPieceY + dy;
+          piece.setAttribute('data-current-x', newX.toFixed(1));
+          piece.setAttribute('data-current-y', newY.toFixed(1));
+
+          // Proximity test to heart target slot (0, 0)
+          const dist = Math.hypot(newX, newY);
+
+          if (dist < 52) {
+            piece.classList.add('snap-ready');
+            if (targetSlot) targetSlot.classList.add('in-range');
+          } else {
+            piece.classList.remove('snap-ready');
+            if (targetSlot) targetSlot.classList.remove('in-range');
+          }
+
+          // Pure translate with ZERO scale shift for 100% stable cursor tracking
+          piece.setAttribute('transform', `translate(${newX.toFixed(1)}, ${newY.toFixed(1)})`);
+        };
 
         piece.addEventListener('pointerdown', (e) => {
           if (e.button !== 0 && e.pointerType === 'mouse') return;
           if (e.cancelable) e.preventDefault();
-          
+
           isDragging = true;
           hasMoved = false;
+
+          // CRITICAL: Immediately clear CSS transition so dragging tracks pointer with 0 latency!
+          piece.style.transition = 'none';
+
           try {
             piece.setPointerCapture(e.pointerId);
           } catch (_) {}
 
-          const pt = getSVGPoint(puzzleSvg, e.clientX, e.clientY);
-          startPtrX = pt.x;
-          startPtrY = pt.y;
+          // Cache inverse CTM once at pointerdown to eliminate layout recalculations during drag
+          try {
+            const ctm = puzzleSvg.getScreenCTM();
+            invCTM = ctm ? ctm.inverse() : null;
+          } catch (_) {
+            invCTM = null;
+          }
+
+          const pt = puzzleSvg.createSVGPoint();
+          pt.x = e.clientX;
+          pt.y = e.clientY;
+          const svgPt = invCTM ? pt.matrixTransform(invCTM) : pt;
+
+          startPtrX = svgPt.x;
+          startPtrY = svgPt.y;
+          curSvgPtrX = svgPt.x;
+          curSvgPtrY = svgPt.y;
           startPieceX = parseFloat(piece.getAttribute('data-current-x')) || 0;
           startPieceY = parseFloat(piece.getAttribute('data-current-y')) || 0;
 
@@ -1281,45 +1339,35 @@ document.addEventListener('DOMContentLoaded', () => {
           puzzleGroup.appendChild(piece);
           piece.classList.add('is-dragging');
 
-          const slot = document.getElementById(`puzzle-slot-${pIdx}`);
-          if (slot) slot.classList.add('highlight-target');
+          if (targetSlot) targetSlot.classList.add('highlight-target');
         });
 
         piece.addEventListener('pointermove', (e) => {
           if (!isDragging) return;
           if (e.cancelable) e.preventDefault();
 
-          const pt = getSVGPoint(puzzleSvg, e.clientX, e.clientY);
-          const dx = pt.x - startPtrX;
-          const dy = pt.y - startPtrY;
+          const pt = puzzleSvg.createSVGPoint();
+          pt.x = e.clientX;
+          pt.y = e.clientY;
+          const svgPt = invCTM ? pt.matrixTransform(invCTM) : pt;
 
-          if (Math.hypot(dx, dy) > 4) {
-            hasMoved = true;
+          curSvgPtrX = svgPt.x;
+          curSvgPtrY = svgPt.y;
+
+          if (!rafId) {
+            rafId = requestAnimationFrame(updatePieceDrag);
           }
-
-          const newX = startPieceX + dx;
-          const newY = startPieceY + dy;
-          piece.setAttribute('data-current-x', newX);
-          piece.setAttribute('data-current-y', newY);
-
-          // Proximity test to heart target slot (0, 0)
-          const dist = Math.hypot(newX, newY);
-          const slot = document.getElementById(`puzzle-slot-${pIdx}`);
-
-          if (dist < 46) {
-            piece.classList.add('snap-ready');
-            if (slot) slot.classList.add('in-range');
-          } else {
-            piece.classList.remove('snap-ready');
-            if (slot) slot.classList.remove('in-range');
-          }
-
-          piece.setAttribute('transform', `translate(${newX.toFixed(1)}, ${newY.toFixed(1)}) scale(1.08)`);
         });
 
         const onPointerEnd = (e) => {
           if (!isDragging) return;
           isDragging = false;
+
+          if (rafId) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+          }
+
           piece.classList.remove('is-dragging', 'snap-ready');
           try {
             if (piece.hasPointerCapture(e.pointerId)) {
@@ -1327,19 +1375,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           } catch (_) {}
 
-          const slot = document.getElementById(`puzzle-slot-${pIdx}`);
-          if (slot) slot.classList.remove('highlight-target', 'in-range');
+          if (targetSlot) targetSlot.classList.remove('highlight-target', 'in-range');
 
           const curX = parseFloat(piece.getAttribute('data-current-x')) || 0;
           const curY = parseFloat(piece.getAttribute('data-current-y')) || 0;
           const dist = Math.hypot(curX, curY);
 
           if (!hasMoved) {
-            // Tap / Click on piece - DO NOT AUTO SNAP! Require holding and dragging to frame!
+            // Tap / Click on piece - DO NOT AUTO SNAP!
             if (piece.getAttribute('data-placed') !== 'true') {
-              if (slot) {
-                slot.classList.add('highlight-target');
-                setTimeout(() => slot.classList.remove('highlight-target'), 1500);
+              if (targetSlot) {
+                targetSlot.classList.add('highlight-target');
+                setTimeout(() => targetSlot.classList.remove('highlight-target'), 1500);
               }
               showToast('💡 Nhấn giữ và kéo mảnh ghép này lên ô viền trong trái tim nhé! 💖');
               playChime(587.33, 'triangle', 0.25);
@@ -1349,8 +1396,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
           }
 
-          // If dropped close to target frame slot in heart (< 46px)
-          if (dist < 46) {
+          // If dropped close to target frame slot in heart (< 52px)
+          if (dist < 52) {
             snapPieceToSlot(piece, true);
           } else {
             // Dropped outside slot -> smoothly return to piece tray spot
