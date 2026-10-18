@@ -76,7 +76,7 @@
         <span class="tab-icon">🌸</span> Hoa Nở
       </button>
       <button class="nav-tab" data-scene="sphere" id="tab-sphere">
-        <span class="tab-icon">🪐</span> Vũ Trụ 3D
+        <span class="tab-icon">💖</span> Trái Tim 3D
       </button>
       <button class="nav-tab" data-scene="card" id="tab-card">
         <span class="tab-icon">💌</span> Thiệp Gửi Em
@@ -123,8 +123,16 @@
         <!-- Full Bloom Wall (Appears when fully opened) -->
         <div class="rose-wall-backdrop" id="rose-wall"></div>
 
-        <div class="bloom-cue">
-          <p class="cue-text">Chạm vào màn hình để bắt đầu câu chuyện 20/10 💖</p>
+        <div class="bloom-cue" id="bloom-cue">
+          <div class="bloom-progress-bar" id="bloom-progress-bar" aria-label="Tiến trình chạm mở đóa hoa">
+            <span class="bloom-heart-dot" data-idx="1">🤍</span>
+            <span class="bloom-heart-dot" data-idx="2">🤍</span>
+            <span class="bloom-heart-dot" data-idx="3">🤍</span>
+            <span class="bloom-heart-dot" data-idx="4">🤍</span>
+            <span class="bloom-heart-dot" data-idx="5">🤍</span>
+            <span class="bloom-count-num" id="bloom-count-num">0/5</span>
+          </div>
+          <p class="cue-text" id="bloom-cue-text">Chạm liên tục để đánh thức đóa hoa 💖</p>
         </div>
       </div>
     </section>
@@ -134,10 +142,42 @@
       <div class="sphere-viewport" id="sphere-viewport">
         <!-- 3D Orbiting World -->
         <div class="world-3d" id="world-3d">
-          <!-- Center Glowing Flower Core -->
-          <div class="sphere-core">
-            <div class="core-lotus"></div>
-            <div class="core-aura"></div>
+          <!-- Center 3D Rotating Glowing Heart -->
+          <div class="heart-3d-wrapper" id="heart-3d-wrapper" role="button" tabindex="0" aria-label="Trái tim 3D yêu thương - Nhấn để phát hiệu ứng phép màu">
+            <div class="heart-3d-spin">
+              <div class="heart-3d-pulse">
+                <div class="heart-slice slice-1">
+                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
+                </div>
+                <div class="heart-slice slice-2">
+                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
+                </div>
+                <div class="heart-slice slice-3">
+                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
+                </div>
+                <div class="heart-slice slice-4">
+                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
+                </div>
+                <div class="heart-slice slice-5">
+                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
+                </div>
+                <div class="heart-slice slice-6">
+                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
+                </div>
+                <div class="heart-slice slice-7">
+                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
+                </div>
+                <div class="heart-slice slice-8">
+                  <svg viewBox="0 0 100 100" class="slice-svg" aria-hidden="true"><path d="M50,28 C45,15 28,12 18,22 C6,34 8,50 24,65 L50,88 L76,65 C92,50 94,34 82,22 C72,12 55,15 50,28 Z"/></svg>
+                </div>
+                <!-- Golden Orbital Rings -->
+                <div class="heart-ring ring-1"></div>
+                <div class="heart-ring ring-2"></div>
+              </div>
+            </div>
+            <!-- Inner Glowing Core Aura -->
+            <div class="heart-core-glow"></div>
+            <div class="heart-pulse-halo"></div>
           </div>
 
           <!-- 3D Elements will be populated dynamically via JavaScript -->
@@ -146,7 +186,7 @@
 
         <!-- Hint for user interaction -->
         <div class="sphere-drag-hint">
-          <span>✨ Bạn có thể dùng chuột hoặc vuốt để xoay quả cầu 3D • Nhấp vào ảnh để xem gần</span>
+          <span>✨ Dùng chuột hoặc vuốt để xoay trái tim 3D • Nhấp vào tên để gửi lời chúc yêu thương 💐</span>
         </div>
       </div>
     </section>

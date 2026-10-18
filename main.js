@@ -24,7 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
     userManualSceneOverride: false,
     isScattered: false,
     isPlayingMusic: false,
-    audioUnlocked: false
+    audioUnlocked: false,
+    bloomClicks: 0,
+    bloomCompleted: false,
+    bloomTargetClicks: 5
   };
 
   // URL Query Parameters Override
@@ -104,7 +107,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Scene 1: Bloom
   const bloomWrapper = document.querySelector('.bloom-wrapper');
   const bloomingFlower = document.getElementById('blooming-flower');
+  const realRoseBloom = document.getElementById('real-rose-bloom');
   const roseWall = document.getElementById('rose-wall');
+  const bloomProgressBar = document.getElementById('bloom-progress-bar');
+  const bloomHeartDots = document.querySelectorAll('.bloom-heart-dot');
+  const bloomCountNum = document.getElementById('bloom-count-num');
+  const bloomCueText = document.getElementById('bloom-cue-text');
 
   // Scene 2: 3D Sphere
   const sphereViewport = document.getElementById('sphere-viewport');
@@ -250,25 +258,169 @@ document.addEventListener('DOMContentLoaded', () => {
   // Replay Story Button
   btnReplayStory.addEventListener('click', () => {
     state.userManualSceneOverride = false;
+    resetBloomState();
     bgAudio.currentTime = 0;
     switchScene('bloom', false);
-    if (bloomWrapper) bloomWrapper.classList.remove('blooming');
     if (bgAudio.paused) {
       toggleMusic();
     }
     showToast('Bắt đầu câu chuyện tự động từ đầu ✨');
   });
 
+  // ============================================================
+  // SPAM CLICK BLOOM MECHANISM (Scene 1)
+  // ============================================================
+  const bloomNotes = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50]; // C5, D5, E5, G5, A5, C6
+  const promptSteps = [
+    "Chạm liên tục để đánh thức đóa hoa 💖",
+    "Chạm tiếp nào! ✨",
+    "Hoa đang thức giấc... 🌸",
+    "Sắp nở rồi, cố lên! 🌺",
+    "Thêm một lần nữa thôi! 🌹",
+    "Đóa hoa bừng nở rực rỡ! 🎉🌹"
+  ];
+
+  function resetBloomState() {
+    state.bloomClicks = 0;
+    state.bloomCompleted = false;
+    if (bloomWrapper) bloomWrapper.classList.remove('blooming');
+    if (bloomingFlower) {
+      bloomingFlower.classList.remove('click-pop');
+      bloomingFlower.style.removeProperty('--rose-scale');
+      bloomingFlower.style.removeProperty('--pop-rot');
+    }
+    bloomHeartDots.forEach(dot => {
+      dot.textContent = '🤍';
+      dot.classList.remove('active');
+    });
+    if (bloomCountNum) bloomCountNum.textContent = '0/5';
+    if (bloomCueText) {
+      bloomCueText.textContent = promptSteps[0];
+      bloomCueText.style.removeProperty('color');
+    }
+  }
+
+  function spawnClickParticles(x, y) {
+    const emojis = ['💖', '❤️', '✨', '🌸', '🌹', '💕', '⭐'];
+    for (let i = 0; i < 5; i++) {
+      const p = document.createElement('span');
+      p.className = 'click-particle';
+      p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      p.style.left = `${x}px`;
+      p.style.top = `${y}px`;
+
+      const angle = Math.random() * Math.PI * 2;
+      const dist = Math.random() * 65 + 30;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist - 50;
+      const drot = (Math.random() - 0.5) * 60;
+
+      p.style.setProperty('--dx', `${dx}px`);
+      p.style.setProperty('--dy', `${dy}px`);
+      p.style.setProperty('--drot', `${drot}deg`);
+      p.style.setProperty('--p-size', `${Math.floor(Math.random() * 10 + 20)}px`);
+
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 900);
+    }
+
+    const ripple = document.createElement('div');
+    ripple.className = 'click-ripple';
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    document.body.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 700);
+  }
+
+  function triggerBloomAndTransition() {
+    if (state.bloomCompleted) return;
+    state.bloomCompleted = true;
+
+    if (bloomWrapper) bloomWrapper.classList.add('blooming');
+    if (bloomCueText) {
+      bloomCueText.textContent = 'Đóa hoa đã bừng nở rực rỡ! 🌹✨';
+      bloomCueText.style.color = '#ffccd5';
+    }
+
+    playMagicalArpeggio();
+    triggerFireworksEffect();
+
+    // Start or synchronize background music
+    if (bgAudio.paused) {
+      toggleMusic();
+    }
+    // Set to 4.5s where "CHỜ CHÚT THÔI, RỒI ANH SẼ TÌM TỚI" begins
+    bgAudio.currentTime = 4.5;
+
+    // After 2.4s of admiring the blooming rose & rose wall, transition to Scene 2
+    setTimeout(() => {
+      if (!state.userManualSceneOverride && state.activeScene === 'bloom') {
+        switchScene('sphere', false);
+      }
+    }, 2400);
+  }
+
+  function handleBloomClick(e) {
+    if (state.activeScene !== 'bloom') return;
+
+    let clientX = e ? e.clientX : window.innerWidth / 2;
+    let clientY = e ? e.clientY : window.innerHeight / 2;
+    if (e && e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    }
+
+    spawnClickParticles(clientX, clientY);
+
+    if (state.bloomCompleted) return;
+
+    state.bloomClicks++;
+    initAudioContext();
+
+    // Rising chime sound on every click
+    const noteIdx = Math.min(state.bloomClicks - 1, bloomNotes.length - 1);
+    playChime(bloomNotes[noteIdx], 'sine', 0.22);
+
+    // Spring pop animation on the flower
+    if (bloomingFlower) {
+      bloomingFlower.classList.remove('click-pop');
+      void bloomingFlower.offsetWidth;
+      bloomingFlower.classList.add('click-pop');
+
+      const scaleVal = 1 + Math.min(state.bloomClicks, 5) * 0.035;
+      bloomingFlower.style.setProperty('--rose-scale', scaleVal);
+      const rot = (state.bloomClicks % 2 === 0 ? 3 : -3);
+      bloomingFlower.style.setProperty('--pop-rot', `${rot}deg`);
+    }
+
+    // Update heart indicators
+    bloomHeartDots.forEach((dot, idx) => {
+      if (idx < state.bloomClicks) {
+        dot.textContent = '❤️';
+        dot.classList.add('active');
+      } else {
+        dot.textContent = '🤍';
+        dot.classList.remove('active');
+      }
+    });
+
+    if (bloomCountNum) {
+      bloomCountNum.textContent = `${Math.min(state.bloomClicks, 5)}/5`;
+    }
+
+    if (bloomCueText && state.bloomClicks <= 5) {
+      bloomCueText.textContent = promptSteps[state.bloomClicks];
+    }
+
+    // Trigger grand blooming when 5 clicks are completed
+    if (state.bloomClicks >= 5) {
+      triggerBloomAndTransition();
+    }
+  }
+
   // Bloom Screen Click to Start
   if (bloomWrapper) {
-    bloomWrapper.addEventListener('click', () => {
-      state.userManualSceneOverride = false;
-      bloomWrapper.classList.add('blooming');
-      if (bgAudio.paused) {
-        toggleMusic();
-      }
-      playMagicalArpeggio();
-    });
+    bloomWrapper.addEventListener('click', handleBloomClick);
   }
 
   // ============================================================
@@ -299,6 +451,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (!state.userManualSceneOverride) {
+        // Guard: While in Scene 1 and the rose has not bloomed via spam clicks,
+        // do not let the timeline prematurely jump to Scene 2.
+        if (state.activeScene === 'bloom' && !state.bloomCompleted) {
+          if (curTime >= 4.4) {
+            bgAudio.currentTime = 0; // Gently loop the guitar intro
+          }
+          return;
+        }
+
         if (state.activeScene !== currentItem.scene) {
           switchScene(currentItem.scene, false);
         }
@@ -327,29 +488,36 @@ document.addEventListener('DOMContentLoaded', () => {
     { src: 'assets/photo-flowers.jpg', title: '20/10 vẹn tròn 🌷' }
   ];
 
-  const floatingQuotes = [
-    "CÓ ANH Ở ĐÂY RỒI!!",
-    "Cầm tay anh, dựa vai anh",
-    "Ngàn ánh sao ôm lấy em ✨",
-    "Yêu em say đắm ❤️",
-    "Bình yên của anh 🕊️",
-    "20/10 ngập tràn hạnh phúc 🎉"
+  // 18 Honorary Women for 20/10 Vietnamese Women's Day
+  const honoraryWomenList = [
+    { name: "Nguyễn Ngọc Thanh Giang", icon: "🌸", wish: "Chúc Thanh Giang luôn rạng rỡ, ngập tràn niềm vui và bình an! 🌸" },
+    { name: "Đỗ Thị Như Quỳnh", icon: "💖", wish: "Chúc Như Quỳnh mãi xinh đẹp, tự tin và vạn sự như ý! 💖" },
+    { name: "Hồ Thanh Hà", icon: "🌷", wish: "Chúc Thanh Hà một ngày 20/10 ngọt ngào, thành công và luôn tươi vui! 🌷" },
+    { name: "Lương Ngọc Bảo Hân", icon: "✨", wish: "Chúc Bảo Hân luôn là đóa hoa thơm ngát, tươi tắn và hạnh phúc! ✨" },
+    { name: "Phạm Mai Xuân Thảo", icon: "🌺", wish: "Chúc Xuân Thảo luôn tràn đầy năng lượng tích cực và may mắn! 🌺" },
+    { name: "Nguyễn Đặng Bích Lam", icon: "🌼", wish: "Chúc Bích Lam luôn dịu dàng, duyên dáng và chạm đến mọi ước mơ! 🌼" },
+    { name: "Võ Ngọc Thảo Nhi", icon: "💫", wish: "Chúc Thảo Nhi luôn rạng ngời nụ cười xinh và được yêu thương trọn vẹn! 💫" },
+    { name: "Lê Quách Kim Thư", icon: "💐", wish: "Chúc Kim Thư một ngày 20/10 thật nhiều hoa, quà và tiếng cười! 💐" },
+    { name: "Huỳnh Kim Phụng", icon: "👑", wish: "Chúc Kim Phụng luôn bản lĩnh, rực rỡ và gặt hái nhiều thành công! 👑" },
+    { name: "Võ Ngọc Khánh An", icon: "🍀", wish: "Chúc Khánh An luôn bình an, may mắn và ngập tràn niềm vui! 🍀" },
+    { name: "Nguyễn Yến Thư", icon: "🎀", wish: "Chúc Yến Thư luôn trong trẻo, đáng yêu và hạnh phúc mỗi ngày! 🎀" },
+    { name: "Lê Ngọc Bảo Châu", icon: "💎", wish: "Chúc Bảo Châu mãi là viên ngọc quý tỏa sáng lấp lánh! 💎" },
+    { name: "Trần Lương Anh Thư", icon: "🌹", wish: "Chúc Anh Thư luôn tươi trẻ, thông minh và tràn ngập yêu thương! 🌹" },
+    { name: "Trần Thị Trúc Quỳnh", icon: "🌸", wish: "Chúc Trúc Quỳnh thanh tú, ngọt ngào và hạnh phúc ngập tràn! 🌸" },
+    { name: "Nguyễn Vũ Trúc Quỳnh", icon: "☀️", wish: "Chúc Trúc Quỳnh luôn rạng rỡ như ánh dương, mọi điều suôn sẻ! ☀️" },
+    { name: "Nguyễn Ngọc Bảo Trân", icon: "🦋", wish: "Chúc Bảo Trân luôn xinh đẹp, may mắn và vạn điều như ý! 🦋" },
+    { name: "Huỳnh Thiên Kim", icon: "🌟", wish: "Chúc Thiên Kim luôn tỏa sáng, quý phái và thành công rực rỡ! 🌟" },
+    { name: "Nguyễn Bùi Gia Linh", icon: "💕", wish: "Chúc Gia Linh luôn đáng yêu, hạnh phúc và gặp nhiều điều tuyệt vời nhất! 💕" }
   ];
 
   function build3DSphere() {
     if (!orbitContainer) return;
     orbitContainer.innerHTML = '';
 
-    const nodes = [];
+    const total = honoraryWomenList.length; // 18 nodes
+    const sphereRadius = window.innerWidth > 768 ? 280 : 205;
 
-    // Combine photos and quotes
-    memoryPhotos.forEach(p => nodes.push({ type: 'photo', data: p }));
-    floatingQuotes.forEach(q => nodes.push({ type: 'quote', text: q }));
-
-    const total = nodes.length; // 18 nodes
-    const sphereRadius = window.innerWidth > 768 ? 260 : 190;
-
-    nodes.forEach((node, i) => {
+    honoraryWomenList.forEach((person, i) => {
       const phi = Math.acos(1 - 2 * (i + 0.5) / total);
       const theta = Math.PI * (1 + Math.sqrt(5)) * i;
 
@@ -360,39 +528,44 @@ document.addEventListener('DOMContentLoaded', () => {
       const rotY = (Math.atan2(x, z) * 180 / Math.PI);
       const rotX = (-Math.asin(y / sphereRadius) * 180 / Math.PI);
 
-      if (node.type === 'photo') {
-        const item = document.createElement('div');
-        item.className = 'polaroid-item';
-        item.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) rotateY(${rotY.toFixed(1)}deg) rotateX(${rotX.toFixed(1)}deg)`;
+      const card = document.createElement('div');
+      card.className = 'name-card-3d';
+      card.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) rotateY(${rotY.toFixed(1)}deg) rotateX(${rotX.toFixed(1)}deg)`;
 
-        const img = document.createElement('img');
-        img.src = node.data.src;
-        img.alt = node.data.title;
-        img.loading = 'lazy';
+      card.innerHTML = `
+        <span class="name-badge-icon">${person.icon}</span>
+        <div class="name-badge-info">
+          <span class="name-badge-title">${person.name}</span>
+          <span class="name-badge-sub">20/10 Rạng Rỡ ✨</span>
+        </div>
+      `;
 
-        const cap = document.createElement('div');
-        cap.className = 'polaroid-caption';
-        cap.textContent = node.data.title;
+      card.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playMagicalArpeggio();
+        const clientX = e.clientX || window.innerWidth / 2;
+        const clientY = e.clientY || window.innerHeight / 2;
+        spawnClickParticles(clientX, clientY);
+        showToast(`💐 ${person.wish}`);
+      });
 
-        item.appendChild(img);
-        item.appendChild(cap);
-
-        item.addEventListener('click', (e) => {
-          e.stopPropagation();
-          playChime(783.99, 'sine', 0.4);
-          setPuzzlePhoto(node.data.src);
-          showToast(`Đã chọn ảnh kỷ niệm: ${node.data.title}`);
-        });
-
-        orbitContainer.appendChild(item);
-      } else {
-        const tag = document.createElement('div');
-        tag.className = 'quote-tag';
-        tag.textContent = node.text;
-        tag.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) rotateY(${rotY.toFixed(1)}deg) rotateX(${rotX.toFixed(1)}deg)`;
-        orbitContainer.appendChild(tag);
-      }
+      orbitContainer.appendChild(card);
     });
+
+    // 3D Rotating Heart interaction
+    const heart3dWrapper = document.getElementById('heart-3d-wrapper');
+    if (heart3dWrapper && !heart3dWrapper.dataset.bound) {
+      heart3dWrapper.dataset.bound = 'true';
+      heart3dWrapper.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playMagicalArpeggio();
+        const clientX = e.clientX || window.innerWidth / 2;
+        const clientY = e.clientY || window.innerHeight / 2;
+        spawnClickParticles(clientX, clientY);
+        triggerFireworksEffect();
+        showToast('💖 Trái tim 3D chúc 18 đóa hoa 20/10 luôn xinh đẹp, hạnh phúc & rạng ngời! 🌹✨');
+      });
+    }
   }
 
   // 3D Sphere Drag Interaction
@@ -1189,6 +1362,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.remove('loading-state');
 
     initAudioContext();
+    resetBloomState();
+    bgAudio.currentTime = 0;
+    switchScene('bloom', false);
     if (bgAudio.paused) {
       toggleMusic();
     }
