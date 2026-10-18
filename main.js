@@ -1153,12 +1153,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const cols = 6;
     const rows = 6;
-    const width = 360;
-    const height = 310;
-    const startX = 20;
-    const startY = 15;
+    const width = 280;
+    const height = 240;
+    const startX = 70;
+    const startY = 12;
     const cellW = width / cols;
     const cellH = height / rows;
+
+    // Piece Tray configuration (7 cols x 4 rows = 28 spots inside tray)
+    const trayX = 14;
+    const trayY = 308;
+    const trayW = 392;
+    const trayH = 136;
+    const trayCols = 7;
+    const trayRows = 4;
+    const trayCellW = trayW / trayCols;
+    const trayCellH = trayH / trayRows;
 
     const hDirs = [];
     for (let r = 0; r <= rows; r++) {
@@ -1207,7 +1217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const pIdx = pieceIndex;
         const complimentText = compliments[pIdx % compliments.length];
 
-        // 1. Build Target Guide Slot (Dashed Frame Outline)
+        // 1. Build Target Guide Slot (Dashed Frame Outline in Heart)
         if (puzzleSlotsGroup) {
           const slot = document.createElementNS('http://www.w3.org/2000/svg', 'path');
           slot.setAttribute('d', d);
@@ -1215,6 +1225,18 @@ document.addEventListener('DOMContentLoaded', () => {
           slot.setAttribute('id', `puzzle-slot-${pIdx}`);
           puzzleSlotsGroup.appendChild(slot);
         }
+
+        // Calculate piece center in heart vs target spot in piece tray
+        const pieceCenterX = (x0 + x1) / 2;
+        const pieceCenterY = (y0 + y1) / 2;
+
+        const trayCol = pIdx % trayCols;
+        const trayRow = Math.floor(pIdx / trayCols);
+        const traySpotX = trayX + trayCol * trayCellW + trayCellW / 2;
+        const traySpotY = trayY + trayRow * trayCellH + trayCellH / 2;
+
+        const trayDx = traySpotX - pieceCenterX;
+        const trayDy = traySpotY - pieceCenterY;
 
         // 2. Build Draggable Puzzle Piece
         const piece = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -1229,6 +1251,8 @@ document.addEventListener('DOMContentLoaded', () => {
         piece.setAttribute('data-compliment', complimentText);
         piece.setAttribute('data-current-x', '0');
         piece.setAttribute('data-current-y', '0');
+        piece.setAttribute('data-tray-x', trayDx.toFixed(1));
+        piece.setAttribute('data-tray-y', trayDy.toFixed(1));
         piece.setAttribute('data-placed', 'true');
 
         // Pointer Drag & Drop Handlers (Modern Web Guidance drag compliant)
@@ -1238,10 +1262,14 @@ document.addEventListener('DOMContentLoaded', () => {
         let hasMoved = false;
 
         piece.addEventListener('pointerdown', (e) => {
-          if (e.button !== 0) return;
+          if (e.button !== 0 && e.pointerType === 'mouse') return;
+          if (e.cancelable) e.preventDefault();
+          
           isDragging = true;
           hasMoved = false;
-          piece.setPointerCapture(e.pointerId);
+          try {
+            piece.setPointerCapture(e.pointerId);
+          } catch (_) {}
 
           const pt = getSVGPoint(puzzleSvg, e.clientX, e.clientY);
           startPtrX = pt.x;
@@ -1258,7 +1286,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         piece.addEventListener('pointermove', (e) => {
-          if (!isDragging || !piece.hasPointerCapture(e.pointerId)) return;
+          if (!isDragging) return;
+          if (e.cancelable) e.preventDefault();
 
           const pt = getSVGPoint(puzzleSvg, e.clientX, e.clientY);
           const dx = pt.x - startPtrX;
@@ -1273,11 +1302,11 @@ document.addEventListener('DOMContentLoaded', () => {
           piece.setAttribute('data-current-x', newX);
           piece.setAttribute('data-current-y', newY);
 
-          // Proximity test to target slot (0, 0)
+          // Proximity test to heart target slot (0, 0)
           const dist = Math.hypot(newX, newY);
           const slot = document.getElementById(`puzzle-slot-${pIdx}`);
 
-          if (dist < 38) {
+          if (dist < 46) {
             piece.classList.add('snap-ready');
             if (slot) slot.classList.add('in-range');
           } else {
@@ -1285,13 +1314,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (slot) slot.classList.remove('in-range');
           }
 
-          piece.setAttribute('transform', `translate(${newX.toFixed(1)}, ${newY.toFixed(1)})`);
+          piece.setAttribute('transform', `translate(${newX.toFixed(1)}, ${newY.toFixed(1)}) scale(1.08)`);
         });
 
         const onPointerEnd = (e) => {
           if (!isDragging) return;
           isDragging = false;
           piece.classList.remove('is-dragging', 'snap-ready');
+          try {
+            if (piece.hasPointerCapture(e.pointerId)) {
+              piece.releasePointerCapture(e.pointerId);
+            }
+          } catch (_) {}
 
           const slot = document.getElementById(`puzzle-slot-${pIdx}`);
           if (slot) slot.classList.remove('highlight-target', 'in-range');
@@ -1301,20 +1335,36 @@ document.addEventListener('DOMContentLoaded', () => {
           const dist = Math.hypot(curX, curY);
 
           if (!hasMoved) {
-            // Tap / Click on piece
-            if (piece.getAttribute('data-placed') === 'false') {
-              snapPieceToSlot(piece, true);
+            // Tap / Click on piece - DO NOT AUTO SNAP! Require holding and dragging to frame!
+            if (piece.getAttribute('data-placed') !== 'true') {
+              if (slot) {
+                slot.classList.add('highlight-target');
+                setTimeout(() => slot.classList.remove('highlight-target'), 1500);
+              }
+              showToast('💡 Nhấn giữ và kéo mảnh ghép này lên ô viền trong trái tim nhé! 💖');
+              playChime(587.33, 'triangle', 0.25);
             } else {
               handlePieceClick(piece, complimentText);
             }
             return;
           }
 
-          // If dropped close to target frame slot (< 38px)
-          if (dist < 38) {
+          // If dropped close to target frame slot in heart (< 46px)
+          if (dist < 46) {
             snapPieceToSlot(piece, true);
           } else {
+            // Dropped outside slot -> smoothly return to piece tray spot
+            const tX = parseFloat(piece.getAttribute('data-tray-x')) || 0;
+            const tY = parseFloat(piece.getAttribute('data-tray-y')) || 0;
+            piece.style.transition = 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2)';
+            piece.setAttribute('transform', `translate(${tX.toFixed(1)}, ${tY.toFixed(1)})`);
+            piece.setAttribute('data-current-x', tX);
+            piece.setAttribute('data-current-y', tY);
             piece.setAttribute('data-placed', 'false');
+            setTimeout(() => {
+              piece.style.removeProperty('transition');
+            }, 380);
+            playChime(349.23, 'sine', 0.15);
             updatePuzzleProgress();
           }
         };
@@ -1333,7 +1383,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function snapPieceToSlot(piece, triggerFx = true) {
     if (!piece) return;
-    piece.style.transition = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    piece.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
     piece.setAttribute('transform', 'translate(0, 0)');
     piece.setAttribute('data-current-x', '0');
     piece.setAttribute('data-current-y', '0');
@@ -1342,7 +1392,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setTimeout(() => {
       piece.style.removeProperty('transition');
-    }, 380);
+    }, 350);
 
     if (triggerFx) {
       const pIdx = parseInt(piece.getAttribute('data-id'), 10) || 0;
@@ -1369,7 +1419,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (placed === total) {
         puzzleProgressText.textContent = `💖 Hoàn thành 100%! Trái tim vẹn tròn (${total}/${total} mảnh)`;
       } else {
-        puzzleProgressText.textContent = `🧩 Đã ghép: ${placed} / ${total} mảnh (Kéo từng khối vào ô khung mẫu)`;
+        puzzleProgressText.textContent = `🧩 Đã ghép: ${placed} / ${total} mảnh (Giữ và kéo từ khay lên khung)`;
       }
     }
   }
@@ -1399,35 +1449,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const pieces = document.querySelectorAll('.puzzle-piece');
 
     pieces.forEach((piece) => {
-      const r = parseInt(piece.getAttribute('data-row'), 10) || 0;
-      const c = parseInt(piece.getAttribute('data-col'), 10) || 0;
+      const tX = parseFloat(piece.getAttribute('data-tray-x')) || 0;
+      const tY = parseFloat(piece.getAttribute('data-tray-y')) || 0;
 
-      let dx = 0;
-      let dy = (r - 2.5) * 55 + (Math.random() - 0.5) * 25;
-
-      if (c < 3) {
-        // Scatter towards left side
-        dx = -75 - Math.random() * 45;
-      } else {
-        // Scatter towards right side
-        dx = 75 + Math.random() * 45;
-      }
-
-      const rot = (Math.random() - 0.5) * 24;
-
-      piece.style.transition = 'transform 0.65s cubic-bezier(0.2, 0.9, 0.3, 1.2)';
-      piece.setAttribute('transform', `translate(${dx.toFixed(1)}, ${dy.toFixed(1)}) rotate(${rot.toFixed(1)})`);
-      piece.setAttribute('data-current-x', dx);
-      piece.setAttribute('data-current-y', dy);
+      piece.style.transition = 'transform 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2)';
+      piece.setAttribute('transform', `translate(${tX.toFixed(1)}, ${tY.toFixed(1)})`);
+      piece.setAttribute('data-current-x', tX);
+      piece.setAttribute('data-current-y', tY);
       piece.setAttribute('data-placed', 'false');
 
       setTimeout(() => {
         piece.style.removeProperty('transition');
-      }, 700);
+      }, 550);
     });
 
     playChime(392, 'sawtooth', 0.25);
-    showToast('Đã xáo trộn các khối! Hãy kéo từng mảnh vào ô khung mẫu 💖');
+    showToast('Đã xáo trộn vào khay! Hãy giữ và kéo từng mảnh lên ô khung mẫu 💖');
     updatePuzzleProgress();
 
     if (btnReorderPuzzle) {
@@ -1436,14 +1473,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function autoSolvePuzzle() {
+    state.isScattered = false;
     const pieces = document.querySelectorAll('.puzzle-piece');
     pieces.forEach((piece, idx) => {
       setTimeout(() => {
         snapPieceToSlot(piece, idx === pieces.length - 1);
-      }, idx * 45);
+      }, idx * 35);
     });
     playMagicalArpeggio();
-    showToast('Đang tự động xếp các mảnh ghép vào khung mẫu... ✨');
+    showToast('Đang tự động xếp các mảnh ghép từ khay vào khung mẫu... ✨');
   }
 
   function togglePuzzleScatter() {

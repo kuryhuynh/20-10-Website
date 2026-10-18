@@ -224,10 +224,10 @@
             <!-- Left: Heart-Shaped Jigsaw Puzzle -->
             <section class="puzzle-section" aria-label="Trái tim ghép hình kỷ niệm">
               <div class="puzzle-wrapper" id="puzzle-wrapper">
-                <svg class="puzzle-svg" id="puzzle-svg" viewBox="-30 -15 460 380" xmlns="http://www.w3.org/2000/svg">
+                <svg class="puzzle-svg" id="puzzle-svg" viewBox="0 0 420 460" xmlns="http://www.w3.org/2000/svg">
                   <defs>
-                    <pattern id="puzzle-img-pattern" patternUnits="userSpaceOnUse" width="400" height="360">
-                      <image id="puzzle-image-elem" href="assets/photo-couple.jpg" x="20" y="10" width="360" height="320" preserveAspectRatio="xMidYMid slice"/>
+                    <pattern id="puzzle-img-pattern" patternUnits="userSpaceOnUse" width="420" height="460">
+                      <image id="puzzle-image-elem" href="assets/photo-couple.jpg" x="70" y="12" width="280" height="240" preserveAspectRatio="xMidYMid slice"/>
                     </pattern>
                     <radialGradient id="heart-glow-bg" cx="50%" cy="50%" r="50%">
                       <stop offset="0%" stop-color="#ff758c" stop-opacity="0.35"/>
@@ -236,9 +236,16 @@
                     </radialGradient>
                   </defs>
                   <!-- Soft Radial Glow Behind Heart -->
-                  <ellipse cx="196" cy="168" rx="150" ry="130" fill="url(#heart-glow-bg)"/>
-                  <!-- Puzzle Target Slots (Dashed frame outlines for each block) -->
+                  <ellipse cx="210" cy="132" rx="140" ry="120" fill="url(#heart-glow-bg)"/>
+                  <!-- Puzzle Target Slots (Dashed frame outlines for each block in heart) -->
                   <g class="puzzle-slots-group" id="puzzle-slots-group"></g>
+                  
+                  <!-- Piece Tray (Khay chứa mảnh ghép để giữ và kéo lên khung mẫu) -->
+                  <g class="puzzle-tray-group" id="puzzle-tray-group">
+                    <rect class="tray-bg" x="10" y="278" width="400" height="172" rx="14" fill="rgba(22, 5, 16, 0.78)" stroke="rgba(255, 215, 120, 0.45)" stroke-width="1.2" stroke-dasharray="6, 4"/>
+                    <text class="tray-label" x="210" y="296" text-anchor="middle" fill="#ffeaa7" font-size="11" font-weight="600" letter-spacing="0.8">✦ KHAY MẢNH GHÉP (GIỮ VÀ KÉO LÊN TRÁI TIM) ✦</text>
+                  </g>
+
                   <!-- Draggable Puzzle Pieces -->
                   <g class="puzzle-group" id="puzzle-group"></g>
                 </svg>
@@ -252,13 +259,13 @@
 
               <!-- Puzzle Status & Hint Bar -->
               <div class="puzzle-status-bar" id="puzzle-status-bar">
-                <span class="puzzle-progress-text" id="puzzle-progress-text">🧩 Kéo từng mảnh ghép vào đúng ô khung mẫu</span>
+                <span class="puzzle-progress-text" id="puzzle-progress-text">🧩 Giữ và kéo từng mảnh ghép từ khay lên ô khung mẫu</span>
               </div>
 
               <!-- Puzzle Controls Under Heart -->
               <div class="puzzle-actions">
-                <button class="action-pill-btn" id="btn-reorder-puzzle" title="Xáo trộn các mảnh ghép để chơi kéo xếp hình">
-                  Xáo Trộn
+                <button class="action-pill-btn" id="btn-reorder-puzzle" title="Xáo trộn các mảnh ghép vào khay để chơi">
+                  Xáo Trộn Để Chơi
                 </button>
                 <button class="action-pill-btn" id="btn-auto-solve-puzzle" title="Tự động xếp toàn bộ mảnh ghép về đúng khung">
                   Tự Ghép Lại
