@@ -922,61 +922,109 @@ document.addEventListener('DOMContentLoaded', () => {
     fallingNamesContainer.innerHTML = '';
 
     const vHeight = sphereViewport.clientHeight || window.innerHeight || 800;
-    const totalSpan = vHeight + 160;
-    const count = honoraryWomenList.length;
-    const stepY = totalSpan / count;
+    const totalSpan = vHeight + 200;
 
-    fallingItems = honoraryWomenList.map((person, idx) => {
+    const regularWomen = honoraryWomenList.filter(p => !p.isVip);
+    const vipPerson = honoraryWomenList.find(p => p.isVip);
+    const regCount = regularWomen.length;
+
+    // All items share the exact same falling speed so vertical spacing is conserved
+    const uniformSpeed = 0.88;
+
+    fallingItems = [];
+
+    // 1. VIP Item: Ánh Duyên (Starts cleanly visible at the top, alone in VIP corridor)
+    if (vipPerson) {
       const card = document.createElement('div');
-      card.className = 'falling-name-card' + (person.isVip ? ' vip-rose-card' : '');
-
-      if (person.isVip) {
-        card.innerHTML = `
-          <div class="falling-name-pill vip-rose-pill" title="Nhấn để nhận lời chúc đặc biệt 20/10 dành riêng cho Ánh Duyên!">
-            <div class="rose-border-garland" aria-hidden="true">
-              <span class="rose-flower-badge tl">🌹</span>
-              <span class="rose-flower-badge tr">🌹</span>
-              <span class="rose-flower-badge bl">🌹</span>
-              <span class="rose-flower-badge br">🌹</span>
-              <span class="rose-leaf-badge top">🌿</span>
-              <span class="rose-leaf-badge bottom">🌿</span>
-            </div>
-            <div class="vip-rose-content">
-              <div class="vip-rose-header">
-                <span class="vip-crown">👑</span>
-                <span class="vip-tag-text">ĐÓA HỒNG RẠNG RỠ NHẤT</span>
-                <span class="vip-crown">👑</span>
-              </div>
-              <div class="vip-name-row">
-                <img src="assets/real-rose.png" alt="" class="vip-mini-rose-img left" />
-                <span class="falling-name-title vip-name-title">${person.name}</span>
-                <img src="assets/real-rose.png" alt="" class="vip-mini-rose-img right" />
-              </div>
-              <span class="falling-name-sub vip-name-sub">🌹 Nàng Thơ 20/10 🌹</span>
-            </div>
+      card.className = 'falling-name-card vip-rose-card';
+      card.innerHTML = `
+        <div class="falling-name-pill vip-rose-pill" title="Nhấn để nhận lời chúc đặc biệt 20/10 dành riêng cho Ánh Duyên!">
+          <div class="rose-border-garland" aria-hidden="true">
+            <span class="rose-flower-badge tl">🌹</span>
+            <span class="rose-flower-badge tr">🌹</span>
+            <span class="rose-flower-badge bl">🌹</span>
+            <span class="rose-flower-badge br">🌹</span>
+            <span class="rose-leaf-badge top">🌿</span>
+            <span class="rose-leaf-badge bottom">🌿</span>
           </div>
-        `;
-      } else {
-        card.innerHTML = `
-          <div class="falling-name-pill">
-            <span class="falling-name-title">${person.name}</span>
-            <span class="falling-name-sub">20/10 Rạng Rỡ</span>
+          <div class="vip-rose-content">
+            <div class="vip-rose-header">
+              <span class="vip-crown">👑</span>
+              <span class="vip-tag-text">ĐÓA HỒNG RẠNG RỠ NHẤT</span>
+              <span class="vip-crown">👑</span>
+            </div>
+            <div class="vip-name-row">
+              <img src="assets/real-rose.png" alt="" class="vip-mini-rose-img left" />
+              <span class="falling-name-title vip-name-title">${vipPerson.name}</span>
+              <img src="assets/real-rose.png" alt="" class="vip-mini-rose-img right" />
+            </div>
+            <span class="falling-name-sub vip-name-sub">🌹 Nàng Thơ 20/10 🌹</span>
           </div>
-        `;
-      }
-
+        </div>
+      `;
       fallingNamesContainer.appendChild(card);
+
+      const vipItem = {
+        el: card,
+        person: vipPerson,
+        idx: 0,
+        regIdx: -1,
+        isVip: true,
+        y: 60, // Clean initial position, high up and clear of other cards
+        x: 0,
+        speed: uniformSpeed,
+        swayTime: 0,
+        swaySpeed: 0.012,
+        swayAmp: 10,
+        isHovered: false
+      };
+
+      card.addEventListener('mouseenter', () => { vipItem.isHovered = true; });
+      card.addEventListener('mouseleave', () => { vipItem.isHovered = false; });
+      card.addEventListener('touchstart', () => { vipItem.isHovered = true; }, { passive: true });
+      card.addEventListener('touchend', () => {
+        setTimeout(() => { vipItem.isHovered = false; }, 900);
+      });
+
+      card.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const rect = card.getBoundingClientRect();
+        playMagicalArpeggio();
+        spawnClickParticles(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        triggerFireworksEffect();
+        showToast(vipPerson.wish);
+      });
+
+      fallingItems.push(vipItem);
+    }
+
+    // 2. Regular 18 Women
+    regularWomen.forEach((person, rIdx) => {
+      const card = document.createElement('div');
+      card.className = 'falling-name-card';
+      card.innerHTML = `
+        <div class="falling-name-pill">
+          <span class="falling-name-title">${person.name}</span>
+          <span class="falling-name-sub">20/10 Rạng Rỡ</span>
+        </div>
+      `;
+      fallingNamesContainer.appendChild(card);
+
+      // Stagger initial Y uniformly across totalSpan
+      const startY = -70 + ((rIdx + 0.5) / regCount) * totalSpan;
 
       const item = {
         el: card,
         person: person,
-        idx: idx,
-        y: person.isVip ? Math.max(70, vHeight * 0.22) : (-70 + idx * stepY),
+        idx: rIdx + 1,
+        regIdx: rIdx,
+        isVip: false,
+        y: startY,
         x: 0,
-        speed: person.isVip ? 0.76 : 0.92, // VIP floats slightly gentler and smoother
-        swayTime: idx * 0.73,
-        swaySpeed: person.isVip ? 0.012 : 0.016,
-        swayAmp: person.isVip ? 15 : 12,
+        speed: uniformSpeed,
+        swayTime: (rIdx + 1) * 0.73,
+        swaySpeed: 0.015,
+        swayAmp: 10,
         isHovered: false
       };
 
@@ -990,20 +1038,12 @@ document.addEventListener('DOMContentLoaded', () => {
       card.addEventListener('click', (e) => {
         e.stopPropagation();
         const rect = card.getBoundingClientRect();
-        const clientX = rect.left + rect.width / 2;
-        const clientY = rect.top + rect.height / 2;
-        if (person.isVip) {
-          playMagicalArpeggio();
-          spawnClickParticles(clientX, clientY);
-          triggerFireworksEffect();
-        } else {
-          playChime(880, 'sine', 0.4);
-          spawnClickParticles(clientX, clientY);
-        }
+        playChime(880, 'sine', 0.4);
+        spawnClickParticles(rect.left + rect.width / 2, rect.top + rect.height / 2);
         showToast(person.wish);
       });
 
-      return item;
+      fallingItems.push(item);
     });
   }
 
@@ -1212,51 +1252,110 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sphereViewport && fallingNamesContainer && fallingItems.length > 0) {
       const vWidth = sphereViewport.clientWidth || window.innerWidth;
       const vHeight = sphereViewport.clientHeight || window.innerHeight;
-      const totalSpan = vHeight + 160;
+      const totalSpan = vHeight + 200;
 
       // Responsive balanced lane fractions across the width
-      let laneFractions;
-      let lanePattern;
+      // VIP card (Ánh Duyên) has its OWN dedicated lane; regular cards never occupy vipFraction
+      let regLanes;
+      let regPattern;
+      let vipFraction;
+      const cardEstWidth = vWidth < 540 ? 135 : 175;
+      const vipEstWidth = vWidth < 540 ? 195 : 240;
 
-      if (vWidth < 540) {
-        // Mobile (3 lanes)
-        laneFractions = [0.02, 0.48, 0.95];
-        lanePattern = [0, 2, 1];
-      } else if (vWidth < 900) {
-        // Tablet (4 lanes)
-        laneFractions = [0.02, 0.32, 0.64, 0.96];
-        lanePattern = [0, 2, 3, 1];
+      if (vWidth < 768) {
+        // Mobile / Small tablet (2 distinct side lanes, VIP in center lane)
+        regLanes = [0.02, 0.98];
+        regPattern = [0, 1];
+        vipFraction = 0.50;
+      } else if (vWidth < 1100) {
+        // Tablet / Small desktop (4 regular lanes, VIP in dedicated center lane)
+        regLanes = [0.02, 0.23, 0.77, 0.98];
+        regPattern = [0, 2, 1, 3];
+        vipFraction = 0.50;
       } else {
-        // Desktop (6 lanes)
-        laneFractions = [0.02, 0.20, 0.39, 0.58, 0.77, 0.96];
-        lanePattern = [0, 3, 5, 1, 4, 2];
+        // Desktop (5 regular lanes + 1 dedicated VIP lane = 6 non-overlapping columns)
+        regLanes = [0.02, 0.20, 0.61, 0.79, 0.98];
+        regPattern = [0, 2, 4, 1, 3];
+        vipFraction = 0.40; // Perfectly frames left of the 3D heart, clear of Lane 1 (0.20) and Lane 2 (0.61)
       }
 
-      const cardEstWidth = vWidth < 540 ? 140 : 185;
-      const availWidth = Math.max(100, vWidth - cardEstWidth);
-
+      // Step 1: Base falling motion & horizontal lane positioning
       fallingItems.forEach((item) => {
-        let laneIdx = lanePattern[item.idx % lanePattern.length];
-        if (item.person.isVip) {
-          // Center-most lane for maximum prominence right beside/framing the 3D heart
-          laneIdx = vWidth < 540 ? 1 : (vWidth < 900 ? 1 : 2);
+        const cardW = item.isVip ? vipEstWidth : cardEstWidth;
+        let fraction;
+        if (item.isVip) {
+          fraction = vipFraction;
+        } else {
+          const laneIdx = regPattern[item.regIdx % regPattern.length];
+          fraction = regLanes[laneIdx];
         }
-        const baseX = 8 + laneFractions[laneIdx] * availWidth;
+
+        const maxX = vWidth - cardW - 8;
+        const baseX = Math.max(8, Math.min(maxX, 8 + fraction * (vWidth - cardW - 16)));
 
         if (!item.isHovered) {
           item.y += item.speed;
           item.swayTime += item.swaySpeed;
 
           // Seamless wrap: preserves uniform vertical intervals indefinitely
-          if (item.y > vHeight + 80) {
+          if (item.y > vHeight + 90) {
             item.y -= totalSpan;
           }
         }
 
         const swayX = Math.sin(item.swayTime) * item.swayAmp;
-        const extraW = item.person.isVip ? 48 : 0;
-        item.x = Math.max(4, Math.min(vWidth - (cardEstWidth + extraW - 10), baseX + swayX));
+        item.x = Math.max(6, Math.min(maxX, baseX + swayX));
+      });
 
+      // Step 2: Dynamic Anti-Collision & Proximity Repulsion Guard
+      // Guarantees Ánh Duyên and all cards NEVER overlap or cover each other
+      const itemCount = fallingItems.length;
+      for (let i = 0; i < itemCount; i++) {
+        const itemA = fallingItems[i];
+        const aW = itemA.isVip ? vipEstWidth : cardEstWidth;
+        const aCenterX = itemA.x + aW / 2;
+
+        for (let j = i + 1; j < itemCount; j++) {
+          const itemB = fallingItems[j];
+          const bW = itemB.isVip ? vipEstWidth : cardEstWidth;
+          const bCenterX = itemB.x + bW / 2;
+
+          const isVipInvolved = itemA.isVip || itemB.isVip;
+          const minSafeX = isVipInvolved ? (vWidth < 540 ? 150 : 215) : (vWidth < 540 ? 100 : 155);
+          const minSafeY = isVipInvolved ? 70 : 44;
+
+          const dx = aCenterX - bCenterX;
+          const dy = itemA.y - itemB.y;
+
+          if (Math.abs(dx) < minSafeX && Math.abs(dy) < minSafeY) {
+            // Proximity detected! Smoothly separate them:
+            // Vertical separation: retard trailing item
+            if (dy > 0) {
+              // itemA is lower (ahead), itemB is higher (trailing)
+              if (!itemB.isHovered) itemB.y -= 1.2;
+              if (!itemA.isHovered) itemA.y += 0.4;
+            } else {
+              // itemB is lower (ahead), itemA is higher (trailing)
+              if (!itemA.isHovered) itemA.y -= 1.2;
+              if (!itemB.isHovered) itemB.y += 0.4;
+            }
+
+            // Horizontal gentle push away
+            const overlapX = minSafeX - Math.abs(dx);
+            const pushX = Math.min(10, overlapX * 0.2);
+            if (dx >= 0) {
+              itemA.x = Math.min(vWidth - aW - 6, itemA.x + pushX);
+              itemB.x = Math.max(6, itemB.x - pushX);
+            } else {
+              itemA.x = Math.max(6, itemA.x - pushX);
+              itemB.x = Math.min(vWidth - bW - 6, itemB.x + pushX);
+            }
+          }
+        }
+      }
+
+      // Step 3: Apply transform to DOM elements
+      fallingItems.forEach((item) => {
         item.el.style.transform = `translate3d(${item.x.toFixed(1)}px, ${item.y.toFixed(1)}px, 0)`;
       });
     }
