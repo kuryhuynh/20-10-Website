@@ -158,6 +158,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnReplayStory = document.getElementById('btn-replay-story');
   const btnCustomNames = document.getElementById('btn-custom-names');
   const btnShareLink = document.getElementById('btn-share-link');
+  const storyProgressStrip = document.getElementById('story-progress-strip');
+  const progressSegments = document.querySelectorAll('.progress-segment');
 
   // Scene 1: Bloom
   const bloomWrapper = document.querySelector('.bloom-wrapper');
@@ -316,6 +318,45 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  const storySceneOrder = ['bloom', 'sphere', 'card', 'frame'];
+  const storySceneDurations = {
+    bloom: 10.8,
+    sphere: 12.0,
+    card: 13.0,
+    frame: 15.0
+  };
+  let sceneElapsedTime = 0;
+  let lastProgressTimestamp = performance.now();
+
+  function updateStoryProgressBar(activeSceneName, progressRatio) {
+    if (!progressSegments || progressSegments.length === 0) return;
+    const curIdx = storySceneOrder.indexOf(activeSceneName);
+    if (curIdx === -1) return;
+
+    progressSegments.forEach((seg, idx) => {
+      const fill = seg.querySelector('.segment-fill');
+      if (!fill) return;
+
+      if (idx < curIdx) {
+        seg.classList.add('completed');
+        fill.style.width = '100%';
+      } else if (idx === curIdx) {
+        seg.classList.remove('completed');
+        const pct = Math.min(100, Math.max(0, progressRatio * 100));
+        fill.style.width = `${pct.toFixed(1)}%`;
+      } else {
+        seg.classList.remove('completed');
+        fill.style.width = '0%';
+      }
+    });
+  }
+
+  function resetStoryProgressBar() {
+    sceneElapsedTime = 0;
+    lastProgressTimestamp = performance.now();
+    updateStoryProgressBar('bloom', 0);
+  }
+
   function resetNavTabsHideLayers() {
     navTabs.forEach(tab => {
       const scene = tab.getAttribute('data-scene');
@@ -332,6 +373,8 @@ document.addEventListener('DOMContentLoaded', () => {
       state.userManualSceneOverride = true;
     }
     state.activeScene = sceneName;
+    sceneElapsedTime = 0;
+    updateStoryProgressBar(sceneName, 0);
 
     // Update Top Tabs
     navTabs.forEach(tab => {
@@ -370,11 +413,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  if (progressSegments) {
+    progressSegments.forEach(seg => {
+      seg.addEventListener('click', () => {
+        const targetScene = seg.getAttribute('data-scene');
+        if (targetScene) {
+          playChime(659.25, 'sine', 0.25);
+          sceneElapsedTime = 0;
+          switchScene(targetScene, true);
+        }
+      });
+    });
+  }
+
   // Replay Story Button
   btnReplayStory.addEventListener('click', () => {
     state.userManualSceneOverride = false;
     resetBloomState();
     resetNavTabsHideLayers();
+    resetStoryProgressBar();
     bgAudio.currentTime = 0;
     switchScene('bloom', false);
     if (bgAudio.paused) {
@@ -491,9 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setTimeout(() => {
-      if (!state.userManualSceneOverride) {
-        switchScene('sphere', false);
-      }
+      switchScene('sphere', false);
       const curTrack = state.playlist[state.currentTrackIndex];
       if (curTrack && curTrack.type === 'local' && bgAudio && bgAudio.paused) {
         bgAudio.play().catch(e => console.warn(e));
@@ -603,15 +658,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!state.userManualSceneOverride) {
-          // Guard: While in Scene 1 (bloom), do not automatically switch scenes
-          // until the user has clicked to bloom and transition
-          if (state.activeScene === 'bloom' && !state.transitioningToHeart) {
-            return;
-          }
-
-          if (state.activeScene !== currentItem.scene) {
-            switchScene(currentItem.scene, false);
-          }
           if (currentItem.bloomTrigger && bloomWrapper) {
             bloomWrapper.classList.add('blooming');
           }
@@ -624,6 +670,85 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+
+  // ============================================================
+  // Story Auto-Progress Loop Across Categories
+  // ============================================================
+  function runStoryProgressLoop(now) {
+    const dt = Math.min(0.1, (now - lastProgressTimestamp) / 1000);
+    lastProgressTimestamp = now;
+
+    const activeTrack = state.playlist[state.currentTrackIndex];
+    const isTikTokTrack = activeTrack && activeTrack.id === 'local-tiktok';
+
+    let curRatio = 0;
+    const curScene = state.activeScene;
+
+    if (isTikTokTrack && bgAudio) {
+      const curTime = bgAudio.currentTime;
+
+      if (curScene === 'bloom') {
+        curRatio = Math.min(1, Math.max(0, curTime / 10.8));
+        if (curTime >= 6.0 && !state.bloomCompleted) {
+          triggerBloomOnly();
+        }
+        if (curTime >= 10.8 && !state.userManualSceneOverride) {
+          if (!state.transitioningToHeart) {
+            transitionTo3DHeart();
+          }
+        }
+      } else if (curScene === 'sphere') {
+        curRatio = Math.min(1, Math.max(0, (curTime - 10.8) / 11.2));
+        if (curTime >= 22.0 && !state.userManualSceneOverride) {
+          switchScene('card', false);
+        }
+      } else if (curScene === 'card') {
+        curRatio = Math.min(1, Math.max(0, (curTime - 22.0) / 13.0));
+        if (curTime >= 35.0 && !state.userManualSceneOverride) {
+          switchScene('frame', false);
+        }
+      } else if (curScene === 'frame') {
+        curRatio = Math.min(1, Math.max(0, (curTime - 35.0) / 15.0));
+      }
+    } else {
+      // High-precision timer for other tracks / without audio
+      const sceneDur = storySceneDurations[curScene] || 12.0;
+
+      if (!document.body.classList.contains('loading-state')) {
+        sceneElapsedTime += dt;
+      }
+      curRatio = Math.min(1, sceneElapsedTime / sceneDur);
+
+      if (!state.userManualSceneOverride) {
+        if (curScene === 'bloom') {
+          if (curRatio >= 0.55 && !state.bloomCompleted) {
+            triggerBloomOnly();
+          }
+          if (curRatio >= 1.0 && !state.transitioningToHeart) {
+            transitionTo3DHeart();
+            sceneElapsedTime = 0;
+          }
+        } else if (curScene === 'sphere') {
+          if (curRatio >= 1.0) {
+            switchScene('card', false);
+            sceneElapsedTime = 0;
+          }
+        } else if (curScene === 'card') {
+          if (curRatio >= 1.0) {
+            switchScene('frame', false);
+            sceneElapsedTime = 0;
+          }
+        } else if (curScene === 'frame') {
+          curRatio = 1.0;
+        }
+      }
+    }
+
+    updateStoryProgressBar(curScene, curRatio);
+    requestAnimationFrame(runStoryProgressLoop);
+  }
+
+  requestAnimationFrame(runStoryProgressLoop);
 
   // ============================================================
   // 6. SCENE 2: 3D MEMORY SPHERE GENERATOR & DRAG ROTATION
