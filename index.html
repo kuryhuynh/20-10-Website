@@ -98,16 +98,19 @@
   <header class="top-nav-bar">
     <nav class="scene-nav" aria-label="Chuyển đổi các cảnh">
       <button class="nav-tab active" data-scene="bloom" id="tab-bloom">
-        Hoa Nở
+        <span class="tab-text">Hoa Nở</span>
       </button>
-      <button class="nav-tab" data-scene="sphere" id="tab-sphere">
-        Trái Tim 3D
+      <button class="nav-tab tab-hidden-layer" data-scene="sphere" id="tab-sphere" data-real-title="Trái Tim 3D" title="Chưa mở khóa - Nhấn để khám phá">
+        <span class="tab-text">Trái Tim 3D</span>
+        <span class="tab-hide-mask" aria-hidden="true"><span class="mask-dots">???</span></span>
       </button>
-      <button class="nav-tab" data-scene="card" id="tab-card">
-        Thiệp Chúc Mừng
+      <button class="nav-tab tab-hidden-layer" data-scene="card" id="tab-card" data-real-title="Thiệp Chúc Mừng" title="Chưa mở khóa - Nhấn để khám phá">
+        <span class="tab-text">Thiệp Chúc Mừng</span>
+        <span class="tab-hide-mask" aria-hidden="true"><span class="mask-dots">???</span></span>
       </button>
-      <button class="nav-tab" data-scene="frame" id="tab-frame">
-        Khung Trái Tim & Lịch
+      <button class="nav-tab tab-hidden-layer" data-scene="frame" id="tab-frame" data-real-title="Khung Trái Tim & Lịch" title="Chưa mở khóa - Nhấn để khám phá">
+        <span class="tab-text">Khung Trái Tim & Lịch</span>
+        <span class="tab-hide-mask" aria-hidden="true"><span class="mask-dots">???</span></span>
       </button>
     </nav>
 
@@ -206,7 +209,7 @@
           </div>
 
           <footer class="cute-card-footer">
-            <span class="cute-sig" id="cute-card-signature">Saphocit ❤️</span>
+            <span class="cute-sig" id="cute-card-signature">Tập thể nam lớp 9/6</span>
           </footer>
         </article>
       </div>
@@ -633,6 +636,7 @@
         
         <div class="quick-preset-chips">
           <span class="chip-label">Gợi ý nhanh:</span>
+          <button type="button" class="name-chip" data-sender="Tập thể nam lớp 9/6" data-recipient="Chị Em Lớp 9/6">Lớp 9/6 ❤️ Chị Em</button>
           <button type="button" class="name-chip" data-sender="Anh" data-recipient="Em">Anh ❤️ Em</button>
           <button type="button" class="name-chip" data-sender="Chồng" data-recipient="Vợ Yêu">Chồng ❤️ Vợ Yêu</button>
           <button type="button" class="name-chip" data-sender="Con" data-recipient="Mẹ Yêu">Con ❤️ Mẹ Yêu</button>

@@ -496,11 +496,130 @@ progress.preloader-progress::-moz-progress-bar {
   padding: 6px 14px;
   border-radius: 20px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   letter-spacing: 0.3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-tab .tab-text {
+  display: inline-block;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Hidden state when not yet clicked to */
+.nav-tab.tab-hidden-layer .tab-text {
+  opacity: 0;
+  filter: blur(8px);
+  transform: scale(0.92);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* The Hide Layer Mask */
+.nav-tab .tab-hide-mask {
+  position: absolute;
+  inset: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(30, 8, 22, 0.88), rgba(55, 12, 38, 0.84));
+  backdrop-filter: blur(6px);
+  border: 1px dashed rgba(255, 159, 178, 0.55);
+  box-shadow: inset 0 0 8px rgba(255, 75, 110, 0.25), 0 0 10px rgba(255, 75, 110, 0.15);
+  cursor: pointer;
+  pointer-events: none;
+  opacity: 1;
+  transform: scale(1);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.nav-tab .tab-hide-mask .mask-dots {
+  font-family: 'Alviona', var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: #ff9fb2;
+  letter-spacing: 3px;
+  text-shadow: 0 0 8px rgba(255, 94, 130, 0.85);
+  animation: tabMaskPulse 2s ease-in-out infinite;
+}
+
+/* Shimmer scanline effect on hide mask */
+.nav-tab .tab-hide-mask::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 215, 120, 0.35), transparent);
+  transform: skewX(-20deg);
+  animation: tabMaskShimmer 3s infinite ease-in-out;
+}
+
+@keyframes tabMaskShimmer {
+  0% { left: -100%; }
+  40%, 100% { left: 160%; }
+}
+
+@keyframes tabMaskPulse {
+  0%, 100% {
+    opacity: 0.75;
+    transform: scale(0.97);
+    color: #ff9fb2;
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+    color: #fff4d0;
+    text-shadow: 0 0 12px rgba(255, 215, 120, 0.95);
+  }
+}
+
+.nav-tab.tab-hidden-layer:hover .tab-hide-mask {
+  border-color: rgba(255, 215, 120, 0.85);
+  background: linear-gradient(135deg, rgba(45, 12, 32, 0.92), rgba(75, 18, 50, 0.88));
+  box-shadow: inset 0 0 12px rgba(255, 215, 120, 0.35), 0 0 14px rgba(255, 215, 120, 0.45);
+}
+
+.nav-tab.tab-hidden-layer:hover .tab-hide-mask .mask-dots {
+  color: #fff4d0;
+  text-shadow: 0 0 12px rgba(255, 215, 120, 1);
+}
+
+/* When unlocked / revealed */
+.nav-tab:not(.tab-hidden-layer) .tab-hide-mask {
+  opacity: 0;
+  transform: scale(1.15);
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.nav-tab.tab-revealed .tab-text {
+  animation: tabTextReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tabTextReveal {
+  0% {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(4px) scale(0.92);
+  }
+  60% {
+    filter: blur(0px);
+    transform: translateY(-1px) scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateY(0) scale(1);
+  }
 }
 
 .nav-tab:hover {
@@ -2534,6 +2653,11 @@ body.puzzle-dragging-active {
     padding: 4px 8px;
     font-size: 11px;
     gap: 4px;
+  }
+
+  .nav-tab .tab-hide-mask .mask-dots {
+    font-size: 11px;
+    letter-spacing: 2px;
   }
 
   .tool-pill {

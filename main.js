@@ -15,7 +15,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1. STATE & PERSISTENCE
   // ============================================================
   const state = {
-    sender: localStorage.getItem('womenDay_sender') || 'Anh',
+    sender: (() => {
+      const s = localStorage.getItem('womenDay_sender');
+      if (!s || s === 'Anh' || s === 'Saphocit') {
+        localStorage.setItem('womenDay_sender', 'Tập thể nam lớp 9/6');
+        return 'Tập thể nam lớp 9/6';
+      }
+      return s;
+    })(),
     recipient: localStorage.getItem('womenDay_recipient') || 'Em',
     photoSrc: localStorage.getItem('womenDay_photo') || 'assets/photo-couple.jpg',
     category: localStorage.getItem('womenDay_category') || 'lover',
@@ -296,6 +303,30 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================
   // 4. SCENE NAVIGATION & TRANSITIONS
   // ============================================================
+  function unlockTab(tab) {
+    if (!tab) return;
+    if (tab.classList.contains('tab-hidden-layer')) {
+      tab.classList.remove('tab-hidden-layer');
+      tab.classList.add('tab-revealed');
+      const realTitle = tab.getAttribute('data-real-title');
+      if (realTitle) {
+        tab.setAttribute('title', realTitle);
+      }
+      playChime(783.99, 'sine', 0.2);
+    }
+  }
+
+  function resetNavTabsHideLayers() {
+    navTabs.forEach(tab => {
+      const scene = tab.getAttribute('data-scene');
+      if (scene !== 'bloom') {
+        tab.classList.add('tab-hidden-layer');
+        tab.classList.remove('tab-revealed');
+        tab.setAttribute('title', 'Chưa mở khóa - Nhấn để khám phá');
+      }
+    });
+  }
+
   function switchScene(sceneName, isManual = false) {
     if (isManual) {
       state.userManualSceneOverride = true;
@@ -306,6 +337,9 @@ document.addEventListener('DOMContentLoaded', () => {
     navTabs.forEach(tab => {
       const isTarget = tab.getAttribute('data-scene') === sceneName;
       tab.classList.toggle('active', isTarget);
+      if (isTarget) {
+        unlockTab(tab);
+      }
     });
 
     // Update Scene Panes
@@ -340,6 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnReplayStory.addEventListener('click', () => {
     state.userManualSceneOverride = false;
     resetBloomState();
+    resetNavTabsHideLayers();
     bgAudio.currentTime = 0;
     switchScene('bloom', false);
     if (bgAudio.paused) {
@@ -608,8 +643,14 @@ document.addEventListener('DOMContentLoaded', () => {
     { src: 'assets/photo-flowers.jpg', title: '20/10 vẹn tròn 🌷' }
   ];
 
-  // 18 Honorary Women for 20/10 Vietnamese Women's Day
+  // Honorary Women for 20/10 Vietnamese Women's Day
   const honoraryWomenList = [
+    {
+      name: "Ánh Duyên",
+      icon: "🌹",
+      isVip: true,
+      wish: "🌹 Chúc Ánh Duyên luôn xinh đẹp kiêu sa, tỏa sáng rực rỡ như đóa hồng nhung ngát hương và ngập tràn hạnh phúc yêu thương! 💖✨ (Thân tặng từ Tập thể nam lớp 9/6)"
+    },
     { name: "Nguyễn Ngọc Thanh Giang", icon: "🌸", wish: "Chúc Thanh Giang luôn rạng rỡ, ngập tràn niềm vui và bình an! 🌸" },
     { name: "Đỗ Thị Như Quỳnh", icon: "💖", wish: "Chúc Như Quỳnh mãi xinh đẹp, tự tin và vạn sự như ý! 💖" },
     { name: "Hồ Thanh Hà", icon: "🌷", wish: "Chúc Thanh Hà một ngày 20/10 ngọt ngào, thành công và luôn tươi vui! 🌷" },
@@ -762,13 +803,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fallingItems = honoraryWomenList.map((person, idx) => {
       const card = document.createElement('div');
-      card.className = 'falling-name-card';
-      card.innerHTML = `
-        <div class="falling-name-pill">
-          <span class="falling-name-title">${person.name}</span>
-          <span class="falling-name-sub">20/10 Rạng Rỡ</span>
-        </div>
-      `;
+      card.className = 'falling-name-card' + (person.isVip ? ' vip-rose-card' : '');
+
+      if (person.isVip) {
+        card.innerHTML = `
+          <div class="falling-name-pill vip-rose-pill" title="Nhấn để nhận lời chúc đặc biệt 20/10 dành riêng cho Ánh Duyên!">
+            <div class="rose-border-garland" aria-hidden="true">
+              <span class="rose-flower-badge tl">🌹</span>
+              <span class="rose-flower-badge tr">🌹</span>
+              <span class="rose-flower-badge bl">🌹</span>
+              <span class="rose-flower-badge br">🌹</span>
+              <span class="rose-leaf-badge top">🌿</span>
+              <span class="rose-leaf-badge bottom">🌿</span>
+            </div>
+            <div class="vip-rose-content">
+              <div class="vip-rose-header">
+                <span class="vip-crown">👑</span>
+                <span class="vip-tag-text">ĐÓA HỒNG RẠNG RỠ NHẤT</span>
+                <span class="vip-crown">👑</span>
+              </div>
+              <div class="vip-name-row">
+                <img src="assets/real-rose.png" alt="" class="vip-mini-rose-img left" />
+                <span class="falling-name-title vip-name-title">${person.name}</span>
+                <img src="assets/real-rose.png" alt="" class="vip-mini-rose-img right" />
+              </div>
+              <span class="falling-name-sub vip-name-sub">🌹 Nàng Thơ 20/10 🌹</span>
+            </div>
+          </div>
+        `;
+      } else {
+        card.innerHTML = `
+          <div class="falling-name-pill">
+            <span class="falling-name-title">${person.name}</span>
+            <span class="falling-name-sub">20/10 Rạng Rỡ</span>
+          </div>
+        `;
+      }
 
       fallingNamesContainer.appendChild(card);
 
@@ -776,12 +846,12 @@ document.addEventListener('DOMContentLoaded', () => {
         el: card,
         person: person,
         idx: idx,
-        y: -70 + idx * stepY,
+        y: person.isVip ? Math.max(70, vHeight * 0.22) : (-70 + idx * stepY),
         x: 0,
-        speed: 0.92, // Uniform velocity guarantees spacing remains identical forever
+        speed: person.isVip ? 0.76 : 0.92, // VIP floats slightly gentler and smoother
         swayTime: idx * 0.73,
-        swaySpeed: 0.016,
-        swayAmp: 12,
+        swaySpeed: person.isVip ? 0.012 : 0.016,
+        swayAmp: person.isVip ? 15 : 12,
         isHovered: false
       };
 
@@ -794,11 +864,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
       card.addEventListener('click', (e) => {
         e.stopPropagation();
-        playChime(880, 'sine', 0.4);
         const rect = card.getBoundingClientRect();
         const clientX = rect.left + rect.width / 2;
         const clientY = rect.top + rect.height / 2;
-        spawnClickParticles(clientX, clientY);
+        if (person.isVip) {
+          playMagicalArpeggio();
+          spawnClickParticles(clientX, clientY);
+          triggerFireworksEffect();
+        } else {
+          playChime(880, 'sine', 0.4);
+          spawnClickParticles(clientX, clientY);
+        }
         showToast(person.wish);
       });
 
@@ -2519,6 +2595,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initAudioContext();
     resetBloomState();
+    resetNavTabsHideLayers();
     switchScene('bloom', false);
     playTrack(state.currentTrackIndex, true);
     playMagicalArpeggio();
