@@ -1158,6 +1158,198 @@ progress.preloader-progress::-moz-progress-bar {
   letter-spacing: 0.5px;
 }
 
+/* ============================================================
+   VIP ROSE CARD: ÁNH DUYÊN (Viền Hoa Hồng Nổi Bật Nhất)
+   ============================================================ */
+.falling-name-card.vip-rose-card {
+  z-index: 60 !important;
+}
+
+.falling-name-card.vip-rose-card:hover {
+  z-index: 150 !important;
+}
+
+.vip-rose-pill {
+  position: relative !important;
+  background: radial-gradient(circle at 50% 50%, rgba(160, 15, 50, 0.96) 0%, rgba(68, 6, 26, 0.98) 100%) !important;
+  border: 2.5px solid transparent !important;
+  background-clip: padding-box, border-box !important;
+  background-origin: padding-box, border-box !important;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(160, 15, 50, 0.96) 0%, rgba(68, 6, 26, 0.98) 100%),
+    linear-gradient(135deg, #ff1744, #ff758c, #ffd700, #ff0055, #f368e0, #ffd700, #ff1744) !important;
+  border-radius: 999px !important;
+  padding: 10px 24px !important;
+  box-shadow: 
+    0 0 25px rgba(255, 23, 68, 0.95),
+    0 0 50px rgba(255, 117, 140, 0.75),
+    0 0 15px rgba(255, 215, 0, 0.8),
+    inset 0 0 18px rgba(255, 182, 193, 0.5),
+    0 8px 30px rgba(0, 0, 0, 0.85) !important;
+  animation: vipRoseGlowPulse 2.5s ease-in-out infinite alternate !important;
+  min-width: 220px;
+}
+
+@keyframes vipRoseGlowPulse {
+  0% {
+    box-shadow: 
+      0 0 22px rgba(255, 23, 68, 0.85),
+      0 0 45px rgba(255, 117, 140, 0.65),
+      0 0 12px rgba(255, 215, 0, 0.6),
+      inset 0 0 14px rgba(255, 77, 109, 0.4),
+      0 8px 25px rgba(0, 0, 0, 0.8);
+    filter: brightness(1);
+  }
+  100% {
+    box-shadow: 
+      0 0 38px rgba(255, 0, 85, 1),
+      0 0 70px rgba(255, 105, 180, 0.9),
+      0 0 28px rgba(255, 215, 0, 0.95),
+      inset 0 0 24px rgba(255, 182, 193, 0.65),
+      0 12px 35px rgba(0, 0, 0, 0.95);
+    filter: brightness(1.15);
+  }
+}
+
+.falling-name-card.vip-rose-card:hover .vip-rose-pill {
+  transform: scale(1.16) !important;
+  box-shadow: 
+    0 0 50px rgba(255, 0, 85, 1),
+    0 0 90px rgba(255, 105, 180, 1),
+    0 0 40px rgba(255, 215, 0, 1),
+    inset 0 0 30px rgba(255, 215, 0, 0.7),
+    0 16px 45px rgba(0, 0, 0, 0.95) !important;
+}
+
+/* Garland Flower Frame surrounding Ánh Duyên */
+.rose-border-garland {
+  position: absolute;
+  inset: -9px;
+  pointer-events: none;
+  border-radius: 999px;
+  border: 1.5px dashed rgba(255, 215, 120, 0.4);
+}
+
+.rose-flower-badge {
+  position: absolute;
+  font-size: 17px;
+  filter: drop-shadow(0 0 6px #ff1744);
+  animation: rosePetalSway 3s ease-in-out infinite alternate;
+}
+
+.rose-flower-badge.tl { top: -8px; left: 10px; }
+.rose-flower-badge.tr { top: -8px; right: 10px; }
+.rose-flower-badge.bl { bottom: -8px; left: 10px; }
+.rose-flower-badge.br { bottom: -8px; right: 10px; }
+
+.rose-leaf-badge {
+  position: absolute;
+  font-size: 13px;
+  filter: drop-shadow(0 0 5px #2ed573);
+}
+.rose-leaf-badge.top { top: -10px; left: 50%; transform: translateX(-50%); }
+.rose-leaf-badge.bottom { bottom: -10px; left: 50%; transform: translateX(-50%); }
+
+@keyframes rosePetalSway {
+  0% { transform: scale(0.95) rotate(-8deg); }
+  100% { transform: scale(1.18) rotate(10deg); }
+}
+
+.vip-rose-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  pointer-events: none;
+}
+
+.vip-rose-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.vip-tag-text {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.9);
+}
+
+.vip-crown {
+  font-size: 12px;
+  filter: drop-shadow(0 0 5px #ffd700);
+}
+
+.vip-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.vip-mini-rose-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px #ff1744);
+  animation: rosePulseMini 2s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.vip-mini-rose-img.right {
+  transform: scaleX(-1);
+}
+
+@keyframes rosePulseMini {
+  0% { transform: scale(0.92); }
+  100% { transform: scale(1.15); }
+}
+
+.vip-name-title {
+  font-family: 'Alviona', var(--font-sans);
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  letter-spacing: 0.8px !important;
+  text-shadow: 
+    0 0 14px #ff1744,
+    0 0 28px #ff0055,
+    0 2px 4px rgba(0, 0, 0, 0.95) !important;
+  background: linear-gradient(90deg, #ffffff 0%, #fff0f5 45%, #ffd700 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.vip-name-sub {
+  font-family: 'Dancing Script', cursive !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #ffeaa7 !important;
+  letter-spacing: 0.6px !important;
+  text-shadow: 0 0 10px rgba(255, 215, 120, 0.9) !important;
+}
+
+@media (max-width: 540px) {
+  .vip-rose-pill {
+    padding: 8px 16px !important;
+    min-width: 190px;
+  }
+  .vip-name-title {
+    font-size: 15.5px !important;
+  }
+  .vip-mini-rose-img {
+    width: 20px;
+    height: 20px;
+  }
+  .vip-name-sub {
+    font-size: 12px !important;
+  }
+}
+
 .orbit-container {
   position: absolute;
   inset: 0;

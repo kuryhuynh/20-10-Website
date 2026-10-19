@@ -923,7 +923,7 @@ document.addEventListener('DOMContentLoaded', () => {
         playMagicalArpeggio();
         spawnClickParticles(e.clientX, e.clientY);
         triggerFireworksEffect();
-        showToast('Trái tim 3D chúc 18 đóa hoa 20/10 luôn xinh đẹp, hạnh phúc và rạng ngời!');
+        showToast('Trái tim 3D chúc các đóa hoa 20/10 luôn xinh đẹp, rạng ngời và ngập tràn hạnh phúc! 💖🌹');
       });
     }
 
@@ -1111,7 +1111,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const availWidth = Math.max(100, vWidth - cardEstWidth);
 
       fallingItems.forEach((item) => {
-        const laneIdx = lanePattern[item.idx % lanePattern.length];
+        let laneIdx = lanePattern[item.idx % lanePattern.length];
+        if (item.person.isVip) {
+          // Center-most lane for maximum prominence right beside/framing the 3D heart
+          laneIdx = vWidth < 540 ? 1 : (vWidth < 900 ? 1 : 2);
+        }
         const baseX = 8 + laneFractions[laneIdx] * availWidth;
 
         if (!item.isHovered) {
@@ -1125,7 +1129,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const swayX = Math.sin(item.swayTime) * item.swayAmp;
-        item.x = Math.max(4, Math.min(vWidth - (cardEstWidth - 10), baseX + swayX));
+        const extraW = item.person.isVip ? 48 : 0;
+        item.x = Math.max(4, Math.min(vWidth - (cardEstWidth + extraW - 10), baseX + swayX));
 
         item.el.style.transform = `translate3d(${item.x.toFixed(1)}px, ${item.y.toFixed(1)}px, 0)`;
       });
