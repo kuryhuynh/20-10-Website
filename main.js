@@ -2512,6 +2512,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================
   const preloaderOverlay = document.getElementById('preloader-overlay');
   const preloaderProgress = document.getElementById('preloader-progress');
+  const liquidProgressFill = document.getElementById('liquid-progress-fill');
   const preloaderPercent = document.getElementById('preloader-percent');
   const preloaderStatus = document.getElementById('preloader-status-text');
   const btnEnterStory = document.getElementById('btn-enter-story');
@@ -2563,6 +2564,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentDisplayProgress < targetProgress) {
       currentDisplayProgress++;
       if (preloaderProgress) preloaderProgress.value = currentDisplayProgress;
+      if (liquidProgressFill) liquidProgressFill.style.width = `${currentDisplayProgress}%`;
       if (preloaderPercent) preloaderPercent.textContent = `${currentDisplayProgress}%`;
 
       if (currentDisplayProgress >= 35 && currentDisplayProgress < 75) {
@@ -2576,6 +2578,7 @@ document.addEventListener('DOMContentLoaded', () => {
       isPreloaderComplete = true;
       clearInterval(progressTimer);
       if (preloaderProgress) preloaderProgress.value = 100;
+      if (liquidProgressFill) liquidProgressFill.style.width = '100%';
       if (preloaderPercent) preloaderPercent.textContent = '100%';
       if (preloaderStatus) preloaderStatus.textContent = 'Món quà 20/10 đã sẵn sàng! 🎁';
       if (btnEnterStory) {

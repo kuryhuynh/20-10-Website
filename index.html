@@ -15,31 +15,61 @@
 </head>
 <body class="loading-state">
   <!-- ============================================================ -->
-  <!-- IMMERSIVE LOADING SCREEN (PRELOADER) -->
+  <!-- ============================================================ -->
+  <!-- IMMERSIVE LIQUID GLASS LOADING SCREEN (PRELOADER) -->
   <!-- ============================================================ -->
   <div class="preloader-overlay" id="preloader-overlay" role="progressbar" aria-live="polite">
-    <div class="preloader-content">
-      <!-- Pulsing Glowing Heart & Flower Icon -->
-      <div class="preloader-icon-wrapper">
-        <div class="preloader-pulse-ring"></div>
-        <div class="preloader-pulse-ring delay"></div>
-        <span class="preloader-heart">💖</span>
-        <span class="preloader-rose">🌹</span>
+    <!-- Ambient Morphing Liquid Blobs (Phông nền chất lỏng đa sắc) -->
+    <div class="liquid-ambient-blobs" aria-hidden="true">
+      <div class="liquid-blob blob-1"></div>
+      <div class="liquid-blob blob-2"></div>
+      <div class="liquid-blob blob-3"></div>
+      <div class="liquid-blob blob-4"></div>
+    </div>
+
+    <!-- Liquid Glassmorphism Main Card (Khối Kính Lỏng Trung Tâm) -->
+    <div class="preloader-content liquid-glass-card">
+      <div class="liquid-glass-specular" aria-hidden="true"></div>
+
+      <!-- Liquid Glass Orb Centerpiece (Khối Cầu Kính Lỏng Hoa Hồng) -->
+      <div class="liquid-glass-orb-wrapper">
+        <div class="liquid-orb-ring ring-1"></div>
+        <div class="liquid-orb-ring ring-2"></div>
+        <div class="liquid-glass-orb">
+          <div class="liquid-orb-specular"></div>
+          <img src="assets/real-rose.png" alt="Rose" class="liquid-rose-inner">
+          <span class="liquid-orb-heart">💖</span>
+        </div>
       </div>
 
       <!-- Heading & Romantic Tagline -->
-      <h1 class="preloader-title">20/10 Tri Ân Người Phụ Nữ</h1>
-      <p class="preloader-status" id="preloader-status-text">Đang chuẩn bị điều bất ngờ ngọt ngào nhất... ✨</p>
-
-      <!-- Semantic Progress Bar with Modern Styling -->
-      <div class="preloader-progress-wrap">
-        <progress class="preloader-progress" id="preloader-progress" value="0" max="100" aria-label="Tiến trình tải trang"></progress>
-        <div class="preloader-percent" id="preloader-percent">0%</div>
+      <div class="liquid-header-wrap">
+        <span class="liquid-badge-pill">✨ 20/10 Tri Ân Yêu Thương ✨</span>
+        <h1 class="preloader-title">20/10 Tri Ân Người Phụ Nữ</h1>
+        <p class="preloader-status" id="preloader-status-text">Đang chuẩn bị điều bất ngờ ngọt ngào nhất... ✨</p>
       </div>
 
-      <!-- Action Button (Reveals when loading hits 100%) -->
-      <button class="preloader-enter-btn" id="btn-enter-story" style="display: none;">
-        Chạm Để Mở Món Quà
+      <!-- Liquid Glass Progress Bar Component -->
+      <div class="preloader-progress-wrap liquid-progress-wrap">
+        <div class="liquid-progress-track">
+          <div class="liquid-progress-fill" id="liquid-progress-fill" style="width: 0%;">
+            <div class="liquid-wave-layer"></div>
+          </div>
+        </div>
+        <!-- Semantic native progress preserved for assistive technologies -->
+        <progress class="preloader-progress sr-only" id="preloader-progress" value="0" max="100" aria-label="Tiến trình tải trang"></progress>
+        
+        <div class="liquid-percent-badge">
+          <span class="preloader-percent" id="preloader-percent">0%</span>
+        </div>
+      </div>
+
+      <!-- Liquid Glass Action Button (Reveals when loading hits 100%) -->
+      <button class="preloader-enter-btn liquid-glass-btn" id="btn-enter-story" style="display: none;">
+        <span class="btn-liquid-shine" aria-hidden="true"></span>
+        <span class="btn-liquid-icon">🎁</span>
+        <span class="btn-liquid-text">Chạm Để Mở Món Quà</span>
+        <span class="btn-liquid-sparkle">✨</span>
       </button>
 
       <div class="preloader-subtext">Dành tặng những người phụ nữ tuyệt vời nhất cuộc đời ❤️</div>
@@ -127,6 +157,21 @@
       <button class="tool-pill" id="btn-share-link" title="Sao chép liên kết gửi tặng">
         Chia Sẻ
       </button>
+    </div>
+    <!-- Story Auto-Progress Strip Across Categories -->
+    <div class="story-progress-strip" id="story-progress-strip" role="progressbar" aria-label="Tiến trình tự động qua các danh mục">
+      <div class="progress-segment" data-scene="bloom" title="Hoa Nở">
+        <div class="segment-fill"></div>
+      </div>
+      <div class="progress-segment" data-scene="sphere" title="Trái Tim 3D">
+        <div class="segment-fill"></div>
+      </div>
+      <div class="progress-segment" data-scene="card" title="Thiệp Chúc Mừng">
+        <div class="segment-fill"></div>
+      </div>
+      <div class="progress-segment" data-scene="frame" title="Khung Trái Tim & Lịch">
+        <div class="segment-fill"></div>
+      </div>
     </div>
   </header>
 
